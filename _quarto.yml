@@ -1,0 +1,86 @@
+authorname: "Tim Gummer"
+draft: false
+engine: knitr 
+
+
+project:
+  type: website
+  output-dir: _site
+  
+  preview: 
+    port: 22222
+    browser: true
+    watch-inputs: true
+    navigate: true
+
+  
+website:
+  title: "bit in that"
+  
+  back-to-top-navigation: true
+
+  favicon: assets/bitinthat-logo.png
+  
+  # repo-url: "https://github.com/t-gummer/t-gummer.netlify.app"
+  # repo-branch: master
+  # repo-actions: [edit, issue]
+  
+  page-footer: 
+    left: |
+      <span class="faux-block">{{< fa regular copyright >}} 2023 bit in that</span>
+      <span class="faux-block darkModeOnly"><a href="https://github.com/t-gummer/t-gummer.netlify.app" target="_blank">{{< fa brands github >}} Source Code</a></span>
+    right: |
+      <span class="faux-block darkModeOnly"> Designed with {{< fa heart >}} using</span>
+      <span class="faux-block darkModeOnly"> <a href="https://www.r-project.org" target="_blank">{{< fa brands r-project >}}</a> and <a href="https://quarto.org" target="_blank">Quarto</a></span>
+
+  
+  navbar:
+# https://icons.getbootstrap.com/?q=data
+    logo: assets/bitinthat-logo.png
+    search: true
+    left: 
+      - href: index.qmd
+        text: Home
+        icon: house
+      # - href: index.qmd # have a page explaining some stuff, have most of the stuff hidden behind ::: darkModeOnly section
+      #   text: Nerd Zone
+      #   icon: eyeglasses
+      - text: Fantasy
+        icon: magic
+        menu:
+          - text: "<b >AFLW</b>"
+          - href: "aflw_fantasy/top_coaches.qmd"
+            text: "Top Coaches"
+            icon: patch-check
+          - href: "aflw_fantasy/selections.qmd"
+            text: "Player Selections"
+            icon: eyedropper
+          - text: "<b >AFL</b>"
+          - href: "afl_fantasy/top_coaches.qmd"
+            text: "Top Coaches"
+            icon: patch-check
+    right:
+      - icon: github
+        href: https://github.com/bit-in-that
+      - icon: twitter
+        href: https://twitter.com/bitinthat
+      - icon: envelope
+        aria-label: email
+        href: "mailto:bit.in.that.afl@gmail.com"
+
+execute:
+  echo: true
+  
+format:
+  html:
+    highlight-style: monokai
+    page-layout: full
+    code-link: true
+    anchor-sections: true
+    # link-external-icon: true
+    link-external-newwindow: true
+    theme:
+      light: [cosmo, assets/light.scss] # also known as normal mode
+      dark: [cosmo, assets/dark.scss] # also known as dark mode
+    toc: true
+

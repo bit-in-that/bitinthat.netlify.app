@@ -1,0 +1,222 @@
+---
+title: "AFL Fantasy Top Coaches"
+execute:
+  echo: false
+---
+
+```{r}
+#| message: false
+
+library(modules)
+library(arrow)
+library(reactable)
+library(dplyr)
+library(htmltools)
+
+linked_icons <- use("../modules/linked_icons.R")
+
+content_creators_ranks <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/content_creators_ranks.parquet") |> 
+mutate(
+    img_url = paste0("https://fantasy.afl.com.au/assets/media/avatars/afl/", user_id, ".png"),
+    fantasy_url = paste0("https://fantasy.afl.com.au/classic/team/user/", team_id_2023)
+  ) |> 
+  select("team_name", "rank_2022", "rank_2023", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
+  arrange(rank_2023)
+
+overall_ranks_combined_2022_2023 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/overall_ranks_combined_2022_2023.parquet") |> 
+  mutate(
+    img_url = paste0("https://fantasy.afl.com.au/assets/media/avatars/afl/", user_id, ".png"),
+    fantasy_url = paste0("https://fantasy.afl.com.au/classic/team/user/", team_id),
+    is_content_creator = user_id %in% content_creators_ranks$user_id
+  ) |> 
+  select(team_name, is_content_creator, rank_2022, rank_2023, img_url, fantasy_url)
+
+```
+
+
+```{r}
+reactable_b2b <- function(upper_bound) {
+  ranks_data <- overall_ranks_combined_2022_2023 |> 
+    filter(rank_2022 <= upper_bound, rank_2023 <= upper_bound) |> 
+    arrange(rank_2023)
+  
+  ranks_data |> 
+    reactable(
+      columns = list(
+        team_name = colDef(
+          name = "Fantasy Team",
+          cell = function(cell_value, row_index, column_name) {
+            img_url <- ranks_data[["img_url"]][[row_index]]
+            fantasy_url <- ranks_data[["fantasy_url"]][[row_index]]
+            tags$a(
+              tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+              " ",
+              cell_value,
+              href = fantasy_url, 
+              target = "_blank"
+              )
+          },
+          width = 300
+        ),
+        is_content_creator = colDef(
+          name = "High Profile?", 
+          cell = function(cell_value) {
+            if(cell_value) "✅" else ""
+          },
+          width = 150
+          ),
+        rank_2022 = colDef(name = "2022", width = 75),
+        rank_2023 = colDef(name = "2023", width = 75),
+        img_url = colDef(show = FALSE),
+        fantasy_url = colDef(show = FALSE)
+      ),
+      columnGroups = list(
+        colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023"))
+      ),
+      fullWidth = FALSE
+    )
+}
+```
+
+
+# {{< fa record-vinyl >}} Proven Track Record
+
+These are the coaches that have ranked consistently highly in both 2022 and 2023.
+
+::: {.panel-tabset}
+
+
+## Top 100 🧢
+
+The coaches listed below had back to back top 100 finishes (i.e. hats).
+
+```{r}
+reactable_b2b(100)
+```
+
+
+## Top 1000
+
+The coaches listed below had back to back top 1000 finishes.
+
+```{r}
+reactable_b2b(1000)
+```
+
+
+## Top 2550
+
+The coaches listed below had back to back top 2550 finishes.
+
+::: darkModeOnly
+
+Note that 2550 here is because this is the maximum ranks you can get from the AFL Fantasy APIs (i.e. $10 \times (2^{8}-1)$).
+
+:::
+
+```{r}
+reactable_b2b(2550)
+```
+
+:::
+
+Note that the repeat hat winners were shared in a tweet by the GOAT of Fantasy himself:
+
+```{=html}
+<blockquote class="twitter-tweet"><p lang="en" dir="ltr">By my count, there were 6 coaches who went back-to-back caps in <a href="https://twitter.com/hashtag/AFLFantasy?src=hash&amp;ref_src=twsrc%5Etfw">#AFLFantasy</a>:<br><br>Crayshaw<br>Dolmanators<br>JD - FTTV<br>MiniMonk<br>Mottram’s Marvel’s<br>Our Savior Laird<br><br>In this new age of high content, quality of coaches, forced trades and rolling lockouts, it’s a pretty amazing feat.</p>&mdash; Moreira’s Magic (@MoreirasMagic) <a href="https://twitter.com/MoreirasMagic/status/1697104930706972903?ref_src=twsrc%5Etfw">August 31, 2023</a></blockquote> <script async src="https://platform.twitter.com/widgets.js" charset="utf-8"></script>
+```
+
+
+
+
+# {{< fa bullhorn >}} High Profile
+
+Check out the track records of podcast hosts and other high profile coaches below.
+
+Note that only data for the top 2550 is available for 2022 ranks.
+
+
+```{r}
+content_creators_ranks |> 
+  select(-user_id) |> 
+  reactable(
+    columns = list(
+      team_name = colDef(
+        name = "Fantasy Team",
+        cell = function(cell_value, row_index, column_name) {
+          img_url <- content_creators_ranks[["img_url"]][[row_index]]
+          fantasy_url <- content_creators_ranks[["fantasy_url"]][[row_index]]
+          tags$a(
+            tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+            " ",
+            cell_value,
+            href = fantasy_url, 
+            target = "_blank"
+            )
+        },
+        width = 200
+      ),
+      name = colDef(
+        name = "Person",
+        cell = function(cell_value, row_index, column_name) {
+          individual_url <- content_creators_ranks[["individual_url"]][[row_index]]
+          tags$a(
+            cell_value,
+            href = individual_url,
+            target = "_blank"
+            )
+        },
+        width = 175
+      ),
+      organisation = colDef(
+        name = "Name",
+        cell = function(cell_value, row_index, column_name) {
+          primary_url <- content_creators_ranks[["primary_url"]][[row_index]]
+          tags$a(
+            cell_value,
+            href = primary_url,
+            target = "_blank"
+            )
+        },
+        width = 200
+      ),
+      primary_url = colDef(
+        name = "Links",
+        cell = function(cell_value, row_index, column_name) {
+          twitter <- content_creators_ranks[["twitter"]][[row_index]]
+          facebook <- content_creators_ranks[["facebook"]][[row_index]]
+          website <- content_creators_ranks[["website"]][[row_index]]
+          YouTube <- content_creators_ranks[["YouTube"]][[row_index]]
+          spotify <- content_creators_ranks[["spotify"]][[row_index]]
+          
+          tagList(
+            if(isFALSE(twitter == "")) linked_icons$linked_twitter_icon(twitter) else NULL,
+            if(isFALSE(facebook == "")) linked_icons$linked_facebook_icon(facebook) else NULL,
+            if(isFALSE(website == "")) linked_icons$linked_globe_icon(website) else NULL,
+            if(isFALSE(YouTube == "")) linked_icons$linked_youtube_icon(YouTube) else NULL,
+            if(isFALSE(spotify == "")) linked_icons$linked_spotify_icon(spotify) else NULL
+          )
+        },
+        width = 120
+      ),
+      rank_2022 = colDef(name = "2022", width = 75),
+      rank_2023 = colDef(name = "2023", width = 75),
+      individual_url = colDef(show = FALSE),
+      twitter = colDef(show = FALSE),
+      facebook = colDef(show = FALSE),
+      website = colDef(show = FALSE),
+      YouTube = colDef(show = FALSE),
+      spotify = colDef(show = FALSE),
+      img_url = colDef(show = FALSE),
+      fantasy_url = colDef(show = FALSE)
+    ),
+    columnGroups = list(
+      colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023")),
+      colGroup(name = "Organisation", columns = c("organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url"))
+      ),
+    fullWidth = FALSE
+  )
+
+
+```
+

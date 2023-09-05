@@ -1,0 +1,255 @@
+---
+title: "AFLW Fantasy Player Selections"
+execute:
+  echo: false
+---
+
+```{r}
+#| message: false
+library(lubridate)
+library(httr)
+library(purrr)
+library(dplyr)
+library(tidyr)
+library(arrow)
+library(reactable)
+library(htmltools)
+library(stringr)
+
+source("../parameters.R")
+
+source("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/modules/get_player_data_afw.R")
+player_data <- get_player_data()
+
+top_10000_selections <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/top_10000_selections.parquet") |> select(
+  -player_name, -player_score, -player_selections, -player_cost
+)
+
+afw_player_selections_lockout_round1 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/raw/afw_player_selections_lockout_round1.parquet")
+
+selections_snapshot_time <- with_tz(player_data$selections_snapshot_time[[1]], "Australia/Sydney") # Perth
+
+player_selection_data <- player_data |> 
+  left_join(afw_player_selections_lockout_round1, "id", suffix = c("", "_round_end")) |> 
+  select(
+    id, full_name, position, cost, avgPoints, selections_round_end, selections
+  ) |> 
+  mutate(
+    selections = selections / 100,
+    selections_round_end = selections_round_end / 100,
+    selections_change = selections - selections_round_end
+  ) |> 
+  left_join(
+    top_10000_selections,
+    by = c("id" = "player_id")
+  ) |>
+  mutate(
+    slope = pmap_dbl(
+      list(selections_top_100, selections_top_1000, selections_top_2000, selections_top_5000, selections_top_10000),
+      ~{
+        data.frame(
+          x = 5:1,
+          selections = (c(..1, ..2, ..3, ..4, ..5)+0.5)/(..1 + 0.5)
+        ) |>
+          lm(formula = selections ~ x) |>
+          _$coefficients[["x"]]
+    })
+  )
+
+```
+
+# {{< fa hand-pointer >}} Overall Selections
+
+
+::: {.panel-tabset}
+
+## Top Coaches 🧢🚗
+
+Note that the selections below are as at the end of round `r parameters$round_number` (trades since then are not included).
+
+```{r}
+
+player_selection_data |> 
+  select(
+    -selections,
+    -selections_change,
+    -starts_with("bench_"),
+    -starts_with("utility_"),
+    -starts_with("captain_"),
+    -starts_with("vice_captain_")
+  ) |> 
+  reactable(
+    columns = list(
+      full_name = colDef(
+        name = "Player",
+        cell = function(cell_value, row_index, column_name) {
+          id <- player_selection_data[["id"]][[row_index]]
+          img_url <- paste0("https://aflwfantasy.afl/media/players/", id, "_500.webp")
+          player_url <- paste0("https://dfsaustralia.com/aflw-fantasy-player-summary/?playerId=CD_I", id)
+          tags$a(
+            tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+            " ",
+            cell_value,
+            href = player_url,
+            target = "_blank"
+          )
+        },
+        width = 200
+      ),
+      position = colDef(name = "Position", width = 100),
+      cost = colDef(name = "Price", width = 100, cell = \(cell_value) paste0(format(cell_value/1000, big.mark = ","), "K"), show = FALSE),
+      avgPoints = colDef(name = "Average", width = 100, show = FALSE),
+      selections_round_end = colDef(name = "Overall", format = colFormat(digits = 2, percent = TRUE), width = 75),
+      selections_top_10000 = colDef(name = "10K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+      selections_top_5000 = colDef(name = "5K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+      selections_top_2000 = colDef(name = "2K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+      selections_top_1000 = colDef(name = "1K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+      selections_top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 75),
+      slope = colDef(name = "Relativity", format = colFormat(digits = 3)),
+      id = colDef(show = FALSE)
+    ),
+    columnGroups =list(
+      colGroup(name = "Selections in Top...", columns = c("selections_round_end", "selections_top_10000", "selections_top_5000", "selections_top_2000", "selections_top_1000", "selections_top_100"))
+      ),
+    filterable = TRUE
+  )
+
+```
+
+
+## Midweek Snapshot 📸
+
+<!-- pre-team annoucement snapshot as well? -->
+
+The midweek snapshot below is as at **`r format(selections_snapshot_time, "%x %X %Z")`**.
+
+```{r}
+
+player_selection_data |> 
+  select(
+    -slope,
+    -starts_with("selections_top"),
+    -starts_with("bench_"),
+    -starts_with("utility_"),
+    -starts_with("captain_"),
+    -starts_with("vice_captain_")
+  ) |> 
+  reactable(
+    columns = list(
+      full_name = colDef(
+        name = "Player",
+        cell = function(cell_value, row_index, column_name) {
+          id <- player_selection_data[["id"]][[row_index]]
+          img_url <- paste0("https://aflwfantasy.afl/media/players/", id, "_500.webp")
+          player_url <- paste0("https://dfsaustralia.com/aflw-fantasy-player-summary/?playerId=CD_I", id)
+          tags$a(
+            tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+            " ",
+            cell_value,
+            href = player_url,
+            target = "_blank"
+          )
+        },
+        width = 200
+      ),
+      position = colDef(name = "Position", width = 100),
+      cost = colDef(name = "Price", width = 100, cell = \(cell_value) paste0(format(cell_value/1000, big.mark = ","), "K"), show = FALSE),
+      avgPoints = colDef(name = "Average", width = 100, show = FALSE),
+      selections = colDef(name = "Midweek", format = colFormat(digits = 2, percent = TRUE), width = 100),
+      selections_round_end = colDef(name = paste0("Round ", parameters$round_number), format = colFormat(digits = 2, percent = TRUE), width = 100),
+      selections_change = colDef(name = "Change", format = colFormat(digits = 2, percent = TRUE), width = 100),
+      id = colDef(show = FALSE)
+    ),
+    columnGroups =list(
+      colGroup(name = "Overall Selections", columns = c("selections", "selections_round_end", "selections_change"))
+      ),
+    filterable = TRUE
+  )
+
+```
+
+
+:::
+
+
+
+# {{< fa chair >}} Role-Based Selections
+
+
+Note that the selections below are as at the end of round `r parameters$round_number` (trades since then are not included).
+
+```{r}
+
+role_selection_table <- function(prefix) {
+  
+  player_selection_data |> 
+    select(
+      full_name,
+      id,
+      position,
+      starts_with(prefix)
+    ) |> 
+    rename_with(~str_replace(.x, prefix, "selections"), starts_with(prefix)) |> 
+    reactable(
+      columns = list(
+        full_name = colDef(
+          name = "Player",
+          cell = function(cell_value, row_index, column_name) {
+            id <- player_selection_data[["id"]][[row_index]]
+            img_url <- paste0("https://aflwfantasy.afl/media/players/", id, "_500.webp")
+            player_url <- paste0("https://dfsaustralia.com/aflw-fantasy-player-summary/?playerId=CD_I", id)
+            tags$a(
+              tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+              " ",
+              cell_value,
+              href = player_url,
+              target = "_blank"
+            )
+          },
+          width = 200
+        ),
+        position = colDef(name = "Position", width = 100),
+        selections_top_10000 = colDef(name = "10K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+        selections_top_5000 = colDef(name = "5K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+        selections_top_2000 = colDef(name = "2K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+        selections_top_1000 = colDef(name = "1K", format = colFormat(digits = 2, percent = TRUE), width = 75),
+        selections_top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 75),
+        id = colDef(show = FALSE)
+      ),
+      columnGroups =list(
+        colGroup(name = paste(str_to_title(str_replace(prefix, "_", " ")), "Selections in Top..."), columns = c("selections_top_10000", "selections_top_5000", "selections_top_2000", "selections_top_1000", "selections_top_100"))
+        ),
+      filterable = TRUE
+    )
+
+}
+```
+
+::: {.panel-tabset}
+
+## Captain 🏴‍☠️️
+
+```{r}
+role_selection_table("captain")
+```
+
+## Vice Captain 🥈
+
+```{r}
+role_selection_table("vice_captain")
+```
+
+## Bench 💺
+
+```{r}
+role_selection_table("bench")
+```
+
+## Utility 🔨
+
+```{r}
+role_selection_table("utility")
+```
+
+:::
+

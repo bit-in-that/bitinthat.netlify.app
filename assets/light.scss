@@ -1,0 +1,16 @@
+/*-- scss:defaults --*/
+$footer-bg: black !default; 
+$footer-fg: white !default; 
+
+/*-- scss:rules --*/
+.sourceCode, .bi-github, .darkModeOnly{ display: none !important; }
+.lightModeOnly{ display: block !important; }
+
+.rt-th-group{
+    background-color: #eee !important;
+}
+
+.faux-block {
+    display: block;
+    padding-bottom: 0.4em;
+}

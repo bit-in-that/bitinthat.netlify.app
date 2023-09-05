@@ -1,0 +1,41 @@
+---
+title: "bit in that"
+description: "Data analysis for Australian Rules Football."
+---
+
+
+
+# Philosophy
+
+* We are **not** trying to re-invent the wheel. We will only publish resources that have are unique or possess a distinct advantage over others.
+
+* We are **not** pundits in any sense of the word. We will leave subjective analysis of the game to those with more authority.
+
+* Strive for simplicity and elegance.
+
+
+# Dark Mode
+
+This website has a dark mode switch in the navigation bar. It serves two purposes:
+
+* Turns the website them to having light text on a black background
+
+* Additional content will show source code and other technical information surrounding how the tools are made
+
+This was done because there is probably a fair intersection between the those who like dark mode and those who like programming!
+
+
+
+::: lightModeOnly
+
+You are currently in light mode.
+
+:::
+
+::: darkModeOnly
+
+You are currently in dark mode.
+
+:::
+
+

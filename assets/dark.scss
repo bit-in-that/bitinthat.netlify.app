@@ -1,0 +1,48 @@
+/*-- scss:defaults --*/
+$footer-bg: black !default; 
+$footer-fg: white !default; 
+
+// $body-text-align:           null !default;
+$body-color:                white !default;
+$body-bg:                   #111 !default;
+
+// Links
+$link-color: cyan !default;
+
+// Navs
+// $nav-link-disabled-color:           $gray-600 !default;
+// $nav-tabs-border-color:             $gray-200 !default;
+
+// Navbar
+
+$navbar-fg: white !default;
+$navbar-bg: #050505 !default;
+
+$navbar-dark-color:                 black !default;
+// $navbar-dark-hover-color:           $secondary !default;
+// $navbar-dark-active-color:          $secondary !default;
+
+// $navbar-dark-brand-color:                 $white !default;
+// $navbar-dark-brand-hover-color:           $navbar-dark-brand-color !default;
+
+
+/*-- scss:rules --*/
+.sourceCode, .bi-github, .darkModeOnly{ display: block !important; }
+.lightModeOnly{ display: none !important; }
+
+.Reactable {
+    background-color: #111 !important;
+}
+
+.rt-th-group{
+    background-color: #222 !important;
+}
+
+.rt-filter{
+    background-color: #222 !important;
+}
+
+.faux-block {
+    display: block;
+    padding-bottom: 0.4em;
+}
