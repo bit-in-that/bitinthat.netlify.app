@@ -1,12 +1,10 @@
-name: Publish to netlify
-# Render quarto (including R code execution) and publish site to netlify 
-
 on:
   workflow_dispatch:
   push:
     branches: main
 
 name: Quarto Publish
+# Render quarto (including R code execution) and publish site to netlify 
 
 jobs:
   build-deploy:
