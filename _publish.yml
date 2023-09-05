@@ -1,0 +1,4 @@
+- source: project
+  netlify:
+    - id: 905416ab-f8d5-47b3-87dc-dd2ae461c189
+      url: 'https://bitinthat.netlify.app'
