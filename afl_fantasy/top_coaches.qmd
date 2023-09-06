@@ -45,6 +45,7 @@ reactable_b2b <- function(upper_bound) {
       columns = list(
         team_name = colDef(
           name = "Fantasy Team",
+          sticky = "left",
           cell = function(cell_value, row_index, column_name) {
             img_url <- ranks_data[["img_url"]][[row_index]]
             fantasy_url <- ranks_data[["fantasy_url"]][[row_index]]
@@ -143,6 +144,7 @@ content_creators_ranks |>
     columns = list(
       team_name = colDef(
         name = "Fantasy Team",
+        sticky = "left",
         cell = function(cell_value, row_index, column_name) {
           img_url <- content_creators_ranks[["img_url"]][[row_index]]
           fantasy_url <- content_creators_ranks[["fantasy_url"]][[row_index]]
