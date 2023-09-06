@@ -16,7 +16,7 @@ project:
   
 website:
   title: "bit in that"
-  
+  google-analytics: "G-G9BY8QESQF"
   back-to-top-navigation: true
 
   favicon: assets/bitinthat-logo.png
