@@ -11,3 +11,6 @@ jobs:
       - name: Check out repository
         run: |
           locale -a 
+          sudo locale-gen en_AU
+          sudo locale-gen en_AU.utf8
+          sudo update-locale 
