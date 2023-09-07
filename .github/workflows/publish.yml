@@ -10,6 +10,14 @@ jobs:
   build-deploy:
     runs-on: ubuntu-latest
     steps:
+    - name: Install Australian Locale
+      run: |
+        locale -a 
+        sudo locale-gen en_AU
+        sudo locale-gen en_AU.utf8
+        sudo update-locale 
+        locale -a 
+        
       - name: Check out repository
         uses: actions/checkout@v3 
 

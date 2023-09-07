@@ -1,6 +1,4 @@
 source("renv/activate.R")
 
-# first try getting Australian Locale 
+# note this requires the austrlian locale to be installed
 invisible(Sys.setlocale(locale = "English_Australia.utf8"))
-# then try UK times (close enough)
-invisible(Sys.setlocale(category = "LC_TIME", locale = "C"))
