@@ -53,14 +53,18 @@ player_selection_data <- player_data |>
   ) |> 
   mutate(
     slope = pmap_dbl(
-      list(selections_top_100, selections_top_1000, selections_top_2000, selections_top_5000, selections_top_10000),
+      list(selections_top_100, selections_top_1000, selections_top_2000, selections_top_5000, selections_top_10000, selections_round_end),
       ~{
-        data.frame(
-          x = 5:1,
-          selections = (c(..1, ..2, ..3, ..4, ..5)+0.5)/(..1 + 0.5)
-        ) |>
-          lm(formula = selections ~ x) |>
-          _$coefficients[["x"]]
+        if(..6 < 0.01 | is.na(..5)) {
+          0L
+        } else {
+          data.frame(
+            x = 5:1,
+            selections = (c(..1, ..2, ..3, ..4, ..5)+0.5)/(..1 + 0.5)
+          ) |>
+            lm(formula = selections ~ x) |>
+            _$coefficients[["x"]]
+        }
     })
   )
 
