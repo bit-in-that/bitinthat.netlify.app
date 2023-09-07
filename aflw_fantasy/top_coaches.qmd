@@ -110,9 +110,11 @@ content_creators_ranks |>
       fantasy_url = colDef(show = FALSE)
     ),
     columnGroups = list(
+      colGroup(name = "", columns = c("overall_rank", "total_points")),
       colGroup(name = "Organisation", columns = c("organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url"))
       ),
-    fullWidth = FALSE
+    fullWidth = FALSE,
+    filterable = TRUE
   )
 
 
