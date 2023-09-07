@@ -20,7 +20,9 @@ library(scales)
 source("../parameters.R")
 
 source("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/modules/get_player_data_afw.R")
+
 player_data <- get_player_data()
+selections_snapshot_time <- with_tz(player_data$selections_snapshot_time[[1]], "Australia/Sydney") # Perth
 
 top_10000_selections <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/top_10000_selections.parquet") |> select(
   -player_name, -player_score, -player_selections, -player_cost
@@ -28,7 +30,6 @@ top_10000_selections <- read_parquet("https://github.com/bit-in-that/data-automa
 
 afw_player_selections_lockout_round1 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/raw/afw_player_selections_lockout_round1.parquet")
 
-selections_snapshot_time <- with_tz(player_data$selections_snapshot_time[[1]], "Australia/Sydney") # Perth
 
 player_selection_data <- player_data |> 
   left_join(afw_player_selections_lockout_round1, "id", suffix = c("", "_round_end")) |> 
@@ -139,7 +140,7 @@ player_selection_data |>
 
 <!-- pre-team annoucement snapshot as well? -->
 
-The midweek snapshot below is as at **`r format(selections_snapshot_time, "%x %X %Z")`**.
+The midweek snapshot below is as at **`r format(selections_snapshot_time, "%d/%m/%Y %I:%m %p %Z")`**.
 
 ```{r}
 
