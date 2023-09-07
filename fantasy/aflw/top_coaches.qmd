@@ -13,7 +13,7 @@ library(reactable)
 library(dplyr)
 library(htmltools)
 
-linked_icons <- use("../modules/linked_icons.R")
+linked_icons <- use("../../modules/linked_icons.R")
 
 round_number <- 1L
 

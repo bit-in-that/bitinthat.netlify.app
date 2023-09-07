@@ -17,7 +17,7 @@ library(htmltools)
 library(stringr)
 library(scales)
 
-source("../parameters.R")
+source("../../parameters.R")
 
 source("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/modules/get_player_data_afw.R")
 

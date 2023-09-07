@@ -13,7 +13,7 @@ library(reactable)
 library(dplyr)
 library(htmltools)
 
-linked_icons <- use("../modules/linked_icons.R")
+linked_icons <- use("../../modules/linked_icons.R")
 
 content_creators_ranks <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/content_creators_ranks.parquet") |> 
 mutate(
