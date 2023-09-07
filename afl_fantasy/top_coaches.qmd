@@ -57,14 +57,14 @@ reactable_b2b <- function(upper_bound) {
               target = "_blank"
               )
           },
-          width = 300
+          width = 200
         ),
         is_content_creator = colDef(
           name = "High Profile?", 
           cell = function(cell_value) {
             if(cell_value) "✅" else ""
           },
-          width = 150
+          width = 130
           ),
         rank_2022 = colDef(name = "2022", width = 75),
         rank_2023 = colDef(name = "2023", width = 75),
@@ -72,9 +72,11 @@ reactable_b2b <- function(upper_bound) {
         fantasy_url = colDef(show = FALSE)
       ),
       columnGroups = list(
+        colGroup(name = "", columns = c("is_content_creator")),
         colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023"))
       ),
-      fullWidth = FALSE
+      fullWidth = FALSE,
+      filterable = TRUE
     )
 }
 ```
@@ -156,7 +158,7 @@ content_creators_ranks |>
             target = "_blank"
             )
         },
-        width = 200
+        width = 175
       ),
       name = colDef(
         name = "Person",
@@ -214,9 +216,11 @@ content_creators_ranks |>
     ),
     columnGroups = list(
       colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023")),
+      colGroup(name = "", columns = c("name")),
       colGroup(name = "Organisation", columns = c("organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url"))
       ),
-    fullWidth = FALSE
+    fullWidth = FALSE,
+    filterable = TRUE
   )
 
 

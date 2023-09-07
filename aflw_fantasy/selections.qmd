@@ -15,6 +15,7 @@ library(arrow)
 library(reactable)
 library(htmltools)
 library(stringr)
+library(scales)
 
 source("../parameters.R")
 
@@ -121,6 +122,7 @@ player_selection_data |>
       id = colDef(show = FALSE)
     ),
     columnGroups =list(
+      colGroup(name = "", columns = c("position")),
       colGroup(name = "Selections in Top...", columns = c("selections_round_end", "selections_top_10000", "selections_top_5000", "selections_top_2000", "selections_top_1000", "selections_top_100"))
       ),
     filterable = TRUE
@@ -175,6 +177,7 @@ player_selection_data |>
       id = colDef(show = FALSE)
     ),
     columnGroups =list(
+      colGroup(name = "", columns = c("position")),
       colGroup(name = "Overall Selections", columns = c("selections", "selections_round_end", "selections_change"))
       ),
     filterable = TRUE
@@ -224,14 +227,60 @@ role_selection_table <- function(prefix) {
           width = 200
         ),
         position = colDef(name = "Position", width = 100),
-        selections_top_10000 = colDef(name = "10K", format = colFormat(digits = 2, percent = TRUE), width = 75),
-        selections_top_5000 = colDef(name = "5K", format = colFormat(digits = 2, percent = TRUE), width = 75),
-        selections_top_2000 = colDef(name = "2K", format = colFormat(digits = 2, percent = TRUE), width = 75),
-        selections_top_1000 = colDef(name = "1K", format = colFormat(digits = 2, percent = TRUE), width = 75),
-        selections_top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 75),
+        selections_top_10000 = colDef(
+          name = "10K", 
+          width = 100,
+          cell = function(cell_value, row_index, column_name) {
+            total_selections <- player_selection_data[["selections_top_10000"]][[row_index]]
+            tagList(
+              tags$sup(tags$b(percent(cell_value, accuracy = 0.1))), "⁄", 
+              tags$sub(percent(total_selections, accuracy = 0.1))
+              )
+            }),
+        selections_top_5000 = colDef(
+          name = "5K", 
+          width = 100,
+          cell = function(cell_value, row_index, column_name) {
+            total_selections <- player_selection_data[["selections_top_5000"]][[row_index]]
+            tagList(
+              tags$sup(tags$b(percent(cell_value, accuracy = 0.1))), "⁄", 
+              tags$sub(percent(total_selections, accuracy = 0.1))
+              )
+            }),
+        selections_top_2000 = colDef(
+          name = "2K",
+          width = 100,
+          cell = function(cell_value, row_index, column_name) {
+            total_selections <- player_selection_data[["selections_top_2000"]][[row_index]]
+            tagList(
+              tags$sup(tags$b(percent(cell_value, accuracy = 0.1))), "⁄", 
+              tags$sub(percent(total_selections, accuracy = 0.1))
+              )
+            }),
+        selections_top_1000 = colDef(
+          name = "1K", 
+          width = 100,
+          cell = function(cell_value, row_index, column_name) {
+            total_selections <- player_selection_data[["selections_top_1000"]][[row_index]]
+            tagList(
+              tags$sup(tags$b(percent(cell_value, accuracy = 0.1))), "⁄", 
+              tags$sub(percent(total_selections, accuracy = 0.1))
+              )
+            }),
+        selections_top_100 = colDef(
+          name = "100🧢", 
+          width = 100,
+          cell = function(cell_value, row_index, column_name) {
+            total_selections <- player_selection_data[["selections_top_100"]][[row_index]]
+            tagList(
+              tags$sup(tags$b(percent(cell_value, accuracy = 0.1))), "⁄", 
+              tags$sub(percent(total_selections, accuracy = 0.1))
+              )
+            }),
         id = colDef(show = FALSE)
       ),
       columnGroups =list(
+        colGroup(name = "", columns = c("position")),
         colGroup(name = paste(str_to_title(str_replace(prefix, "_", " ")), "Selections in Top..."), columns = c("selections_top_10000", "selections_top_5000", "selections_top_2000", "selections_top_1000", "selections_top_100"))
         ),
       filterable = TRUE
