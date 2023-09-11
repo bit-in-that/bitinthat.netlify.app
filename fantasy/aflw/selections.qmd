@@ -225,7 +225,7 @@ role_selection_table <- function(prefix) {
       starts_with("selections_")
     ) |> 
     rename_with(~str_replace(.x, prefix, "role_selections"), starts_with(prefix)) |> 
-    arrange(desc(selections_top_10000))
+    arrange(desc(role_selections_top_1000))
   
   role_selections |> 
     select(

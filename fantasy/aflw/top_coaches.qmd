@@ -31,7 +31,7 @@ mutate(
     img_url = paste0("https://aflwfantasy.afl/media/avatars/user/", user_id, ".png?v=1"),
     fantasy_url = paste0("https://aflwfantasy.afl/user/team/", parameters$round_number,"/", team_id_2023)
   ) |> 
-  select("team_name", "overall_rank", "total_points", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
+  select("team_name", "overall_rank", "total_points", "roundRank", "roundPoints", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
   arrange(overall_rank)
 
 
@@ -84,7 +84,6 @@ rank_pace |>
     columnGroups = list(
       colGroup(name = "Team Value", columns = c("average_value", "min_value", "max_value"))
       ),
-    fullWidth = FALSE,
     filterable = TRUE,
     pagination = FALSE
   )
@@ -160,8 +159,10 @@ content_creators_ranks |>
         },
         width = 120
       ),
-      overall_rank = colDef(name = "Overall Rank", width = 100, format = colFormat(separators = TRUE)),
-      total_points = colDef(name = "Total Points", width = 75, format = colFormat(separators = TRUE)),
+      overall_rank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      total_points = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
+      roundRank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      roundPoints = colDef(name = "Points", width = 100, format = colFormat(separators = TRUE)),
       individual_url = colDef(show = FALSE),
       twitter = colDef(show = FALSE),
       facebook = colDef(show = FALSE),
@@ -172,10 +173,10 @@ content_creators_ranks |>
       fantasy_url = colDef(show = FALSE)
     ),
     columnGroups = list(
-      colGroup(name = "", columns = c("overall_rank", "total_points")),
+      colGroup(name = "Overall", columns = c("overall_rank", "total_points")),
+      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
       colGroup(name = "Organisation", columns = c("organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url"))
       ),
-    fullWidth = FALSE,
     filterable = TRUE
   )
 
@@ -196,7 +197,7 @@ ranking_data |>
   filter(
     overallRank %in% 1:100
   ) |> 
-  select(teamName, overallRank, totalPoints, teamValue, value_rank) |> 
+  select(teamName, overallRank, totalPoints, roundRank, roundPoints, teamValue, value_rank) |> 
     reactable(
     columns = list(
       teamName = colDef(
@@ -215,16 +216,66 @@ ranking_data |>
         },
         width = 200
       ),
-      overallRank = colDef(name = "Rank", width = 100, format = colFormat(separators = TRUE)),
-      totalPoints = colDef(name = "Points", width = 100, format = colFormat(separators = TRUE)),
+      overallRank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      totalPoints = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
+      roundRank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      roundPoints = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
       teamValue = colDef(name = "Amount", width = 100, cell = \(cell_value) paste0("$", cell_value/1000000, "m")),
       value_rank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE))
     ),
     columnGroups = list(
       colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
+      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
       colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
       ),
-    fullWidth = FALSE,
+    filterable = TRUE
+  )
+
+
+```
+
+## Top 100 Week 🏈
+
+
+```{r}
+round_rank_data <- ranking_data |> 
+  filter(
+    roundRank %in% 1:100
+  ) |> 
+  arrange(roundRank)
+
+round_rank_data |> 
+  select(teamName, roundRank, roundPoints, overallRank, totalPoints, teamValue, value_rank) |> 
+    reactable(
+    columns = list(
+      teamName = colDef(
+        name = "Fantasy Team",
+        sticky = "left",
+        cell = function(cell_value, row_index, column_name) {
+          img_url <- round_rank_data[["img_url"]][[row_index]]
+          fantasy_url <- round_rank_data[["fantasy_url"]][[row_index]]
+          tags$a(
+            tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+            " ",
+            cell_value,
+            href = fantasy_url, 
+            target = "_blank"
+            )
+        },
+        width = 200
+      ),
+      overallRank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      totalPoints = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
+      roundRank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      roundPoints = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
+      teamValue = colDef(name = "Amount", width = 100, cell = \(cell_value) paste0("$", cell_value/1000000, "m")),
+      value_rank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE))
+    ),
+    columnGroups = list(
+      colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
+      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
+      colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
+      ),
     filterable = TRUE
   )
 
@@ -242,7 +293,7 @@ ranking_data |>
   arrange(
     value_rank
   ) |> 
-  select(teamName, teamValue, value_rank, overallRank, totalPoints) |> 
+  select(teamName, teamValue, value_rank, overallRank, totalPoints, roundRank, roundPoints) |> 
     reactable(
     columns = list(
       teamName = colDef(
@@ -261,16 +312,18 @@ ranking_data |>
         },
         width = 200
       ),
-      overallRank = colDef(name = "Rank", width = 100, format = colFormat(separators = TRUE)),
-      totalPoints = colDef(name = "Points", width = 100, format = colFormat(separators = TRUE)),
+      overallRank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      totalPoints = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
+      roundRank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE)),
+      roundPoints = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
       teamValue = colDef(name = "Amount", width = 100, cell = \(cell_value) paste0("$", cell_value/1000000, "m")),
       value_rank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE))
     ),
     columnGroups = list(
       colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
+      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
       colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
       ),
-    fullWidth = FALSE,
     filterable = TRUE
   )
 
