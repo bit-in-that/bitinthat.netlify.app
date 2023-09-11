@@ -1,4 +1,7 @@
-top_10000_lineups <- read_parquet("../data-automation/aflw_fantasy/data/raw/top_10000_lineups.parquet")
+library(arrow)
+library(dplyr)
+library(reactable)
+top_10000_lineups <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/raw/top_10000_lineups.parquet")
 
 top_10000_lineups |> 
   group_by(overall_rank) |> 
@@ -22,9 +25,9 @@ top_10000_lineups |>
         name = "Captain Set",
         cell = function(cell_value) {
           if(cell_value) {
-            "✅"
-          } else {
             "❌"
+          } else {
+            "✅"
           }
         }
       ),
@@ -32,9 +35,9 @@ top_10000_lineups |>
         name = "VC Set",
         cell = function(cell_value) {
           if(cell_value) {
-            "✅"
-          } else {
             "❌"
+          } else {
+            "✅"
           }
         }
       ),

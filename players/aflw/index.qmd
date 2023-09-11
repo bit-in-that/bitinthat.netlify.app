@@ -2,4 +2,18 @@
 title: "AFLW Players"
 execute:
   echo: false
+freeze: true
+listing:
+  - id: aflw-players
+    categories: true
+    contents: players.yaml
+    type: default
+    filter-ui: [title, categories]
 ---
+
+
+Below is a list of AFLW players. In future these will link to my own custom player profiles but for now they will just link to their profiles on DFS Australia.
+
+:::{#aflw-players}
+:::
+

@@ -11,16 +11,25 @@ library(modules)
 library(arrow)
 library(reactable)
 library(dplyr)
+library(tidyr)
+library(purrr)
+library(scales)
 library(htmltools)
 
+source("../../parameters.R")
 linked_icons <- use("../../modules/linked_icons.R")
 
-round_number <- 1L
+ranking_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/ranking_data.parquet") |> 
+  mutate( 
+    img_url = paste0("https://aflwfantasy.afl/media/avatars/user/", userId, ".png?v=1"),
+    fantasy_url = paste0("https://aflwfantasy.afl/user/team/", parameters$round_number,"/", userId),
+    value_rank = rank(-teamValue, ties.method = "first")
+  ) 
 
 content_creators_ranks <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/content_creators_ranks_aflw.parquet") |>
 mutate( 
     img_url = paste0("https://aflwfantasy.afl/media/avatars/user/", user_id, ".png?v=1"),
-    fantasy_url = paste0("https://aflwfantasy.afl/user/team/1/", team_id_2023)
+    fantasy_url = paste0("https://aflwfantasy.afl/user/team/", parameters$round_number,"/", team_id_2023)
   ) |> 
   select("team_name", "overall_rank", "total_points", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
   arrange(overall_rank)
@@ -28,7 +37,60 @@ mutate(
 
 ```
 
-*The data below is as at round `r round_number` of the 2023 AFLW season.*
+*The data below is as at round `r parameters$round_number` of the 2023 AFLW season.*
+
+
+
+# {{< fa gauge-high >}} Overall Rank Pace
+
+```{r}
+
+rank_pace <- tibble(
+  overallRank = c(1, 100, 1000 * (1:10)),
+  rank_label = c("First🚗", "100🧢", number(1000 * (1:10), big.mark = ","))
+) |> 
+  mutate(
+    ranks_df = map(overallRank, ~ {
+      ranking_data |> 
+        slice(1:.x) |> 
+        select(totalPoints, teamValue) |> 
+        summarise(
+          total_points = min(totalPoints),
+          average_value = mean(teamValue),
+          min_value = min(teamValue),
+          max_value = max(teamValue),
+          max_value = max(teamValue)
+        )
+      })
+  ) |> 
+  unnest(ranks_df)
+
+rank_pace |> 
+  reactable(
+    columns = list(
+      overallRank = colDef(
+        name = "Rank", 
+        width = 80, 
+        sticky = "left",
+        cell = function(cell_value, row_index, column_name) {
+          rank_pace[["rank_label"]][[row_index]]
+        }),
+      total_points = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
+      average_value = colDef(name = "Average", width = 100, cell = \(cell_value) paste0("$", round(cell_value/1000000, 3), "m")),
+      min_value = colDef(name = "Min", width = 100, cell = \(cell_value) paste0("$", round(cell_value/1000000, 3), "m")),
+      max_value = colDef(name = "Max", width = 100, cell = \(cell_value) paste0("$", round(cell_value/1000000, 3), "m")),
+      rank_label = colDef(show = FALSE)
+    ),
+    columnGroups = list(
+      colGroup(name = "Team Value", columns = c("average_value", "min_value", "max_value"))
+      ),
+    fullWidth = FALSE,
+    filterable = TRUE,
+    pagination = FALSE
+  )
+
+```
+
 
 # {{< fa bullhorn >}} High Profile
 
@@ -120,3 +182,100 @@ content_creators_ranks |>
 
 ```
 
+
+
+
+# {{< fa hat-wizard >}} Highest Performers
+
+::: {.panel-tabset}
+
+## Top 100 Rank 🧢
+
+```{r}
+ranking_data |> 
+  filter(
+    overallRank %in% 1:100
+  ) |> 
+  select(teamName, overallRank, totalPoints, teamValue, value_rank) |> 
+    reactable(
+    columns = list(
+      teamName = colDef(
+        name = "Fantasy Team",
+        sticky = "left",
+        cell = function(cell_value, row_index, column_name) {
+          img_url <- ranking_data[["img_url"]][[row_index]]
+          fantasy_url <- ranking_data[["fantasy_url"]][[row_index]]
+          tags$a(
+            tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+            " ",
+            cell_value,
+            href = fantasy_url, 
+            target = "_blank"
+            )
+        },
+        width = 200
+      ),
+      overallRank = colDef(name = "Rank", width = 100, format = colFormat(separators = TRUE)),
+      totalPoints = colDef(name = "Points", width = 100, format = colFormat(separators = TRUE)),
+      teamValue = colDef(name = "Amount", width = 100, cell = \(cell_value) paste0("$", cell_value/1000000, "m")),
+      value_rank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE))
+    ),
+    columnGroups = list(
+      colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
+      colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
+      ),
+    fullWidth = FALSE,
+    filterable = TRUE
+  )
+
+
+```
+
+## Top 100 Value 🤑
+
+
+```{r}
+ranking_data |> 
+  filter(
+    value_rank %in% 1:100
+  ) |> 
+  arrange(
+    value_rank
+  ) |> 
+  select(teamName, teamValue, value_rank, overallRank, totalPoints) |> 
+    reactable(
+    columns = list(
+      teamName = colDef(
+        name = "Fantasy Team",
+        sticky = "left",
+        cell = function(cell_value, row_index, column_name) {
+          img_url <- ranking_data[["img_url"]][[row_index]]
+          fantasy_url <- ranking_data[["fantasy_url"]][[row_index]]
+          tags$a(
+            tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+            " ",
+            cell_value,
+            href = fantasy_url, 
+            target = "_blank"
+            )
+        },
+        width = 200
+      ),
+      overallRank = colDef(name = "Rank", width = 100, format = colFormat(separators = TRUE)),
+      totalPoints = colDef(name = "Points", width = 100, format = colFormat(separators = TRUE)),
+      teamValue = colDef(name = "Amount", width = 100, cell = \(cell_value) paste0("$", cell_value/1000000, "m")),
+      value_rank = colDef(name = "Rank", width = 75, format = colFormat(separators = TRUE))
+    ),
+    columnGroups = list(
+      colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
+      colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
+      ),
+    fullWidth = FALSE,
+    filterable = TRUE
+  )
+
+
+```
+
+
+:::
