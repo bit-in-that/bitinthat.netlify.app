@@ -3,7 +3,8 @@ on:
   push:
     branches: main
   schedule:
-    - cron: "0 8,20 * * *" # automatically twice a day at 7AM and 6PM 
+    - cron: "0 9,21,3,15 * * *" # automatically four times a day at 7AM, 1PM and 7PM, 1AM
+    - cron: "0 4 * * 1" # 2:00 PM every monday post new data
 
 name: Quarto Publish
 # Render quarto (including R code execution) and publish site to netlify 
