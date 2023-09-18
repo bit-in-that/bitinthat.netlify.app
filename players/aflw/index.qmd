@@ -7,8 +7,9 @@ listing:
   - id: aflw-players
     categories: true
     contents: players.yaml
-    type: default
+    type: grid
     filter-ui: [title, categories]
+    fields: [image, title, description, categories]
 ---
 
 

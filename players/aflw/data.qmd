@@ -1,0 +1,68 @@
+---
+title: "AFLW Player Data"
+---
+
+```{r}
+library(reactable)
+library(htmltools)
+library(bslib)
+
+source("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/modules/get_player_data_afw.R")
+player_data <- get_player_data()
+
+
+```
+
+
+```{=html}
+<script>
+const x = ['a', 1, ['d']];
+download_table = function() {
+  Reactable.downloadDataCSV('player-data')
+}
+
+func = function() {
+  console.log(get_x());
+}
+
+get_x = function() {
+  return x;
+}
+
+
+</script>
+```
+
+
+
+```{r}
+
+player_data |> 
+  select(id, full_name, birthday, squad_name, position, gamesPlayed, avgPoints) |> 
+  reactable(
+    elementId = "player-data"
+  )
+
+
+htmltools::browsable(
+  tagList(
+    tags$button("Download as CSV", onclick = "download_table()"),
+    tags$button("Funky", onclick = "func()"),
+    tags$button("Hide Species", onclick = "Reactable.setHiddenColumns('iris-table', ['Species'])"),
+    tags$button("Show All", onclick = "Reactable.setHiddenColumns('iris-table', [])"),
+    reactable(
+      iris,
+      columns = list(
+        Sepal.Length = colDef(show = FALSE),
+        Sepal.Width = colDef()
+      ),
+      defaultPageSize = 5,
+      elementId = "iris-table",
+      columnGroups = list(colGroup(
+        "Group", columns = c("Sepal.Length", "Sepal.Width", "Species")
+      ))
+    )
+  )
+)
+```
+
