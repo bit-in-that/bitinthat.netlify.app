@@ -26,6 +26,23 @@ ranking_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw
     value_rank = rank(-teamValue, ties.method = "first")
   ) 
 
+ranking_data_previous <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/ranking_data_previous.parquet") |> 
+  select(totalPoints, overallRank, userId)
+
+ranking_data <- ranking_data |> 
+  left_join(
+    ranking_data_previous |> select(overallRank, totalPoints_previous_rank = totalPoints),
+    by = "overallRank"
+  ) |>
+  left_join(
+    ranking_data_previous |> select(userId, previous_overall_rank = overallRank),
+    by = "userId"
+  ) |>
+  mutate(
+    rank_change = previous_overall_rank - overallRank,
+    points_to_maintain = c(tail(totalPoints, n = -1), NA) - totalPoints_previous_rank
+  )
+
 content_creators_ranks <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/content_creators_ranks_aflw.parquet") |>
 mutate( 
     img_url = paste0("https://aflwfantasy.afl/media/avatars/user/", user_id, ".png?v=1"),
@@ -37,28 +54,38 @@ mutate(
 
 ```
 
-*The data below is as at round `r parameters$round_number` of the 2023 AFLW season.*
+Note that all the information below is as at **round `r parameters$round_number`** of the 2023 AFLW season.
 
 
 
 # {{< fa gauge-high >}} Overall Rank Pace
 
-```{r}
+"Maintain" below means the number of points the previous holder of the borderline position would have required to hold their rank.
 
+```{r}
 rank_pace <- tibble(
   overallRank = c(1, 100, 1000 * (1:10)),
   rank_label = c("First🚗", "100🧢", number(1000 * (1:10), big.mark = ","))
 ) |> 
   mutate(
-    ranks_df = map(overallRank, ~ {
+    ranks_df = map2(c(1, head(overallRank, n = -1)), overallRank, ~ {
       ranking_data |> 
-        slice(1:.x) |> 
-        select(totalPoints, teamValue) |> 
+        slice(.x:.y) |> 
+        select(totalPoints, roundPoints, roundRank, teamValue, rank_change, points_to_maintain) |> 
         summarise(
           total_points = min(totalPoints),
+          points_to_maintain = tail(points_to_maintain, n = 1),
+          best_round_points = max(roundPoints),
+          worst_round_points = min(roundPoints),
+          mean_round_points = round(mean(roundPoints), digits = 0),
+          best_round_rank = min(roundRank),
+          worst_round_rank = max(roundRank),
+          average_round_rank = round(mean(roundRank), digits = 0),
+          best_rank_increase = max(rank_change),
+          worst_rank_decrease = min(rank_change),
+          average_rank_change = round(mean(rank_change), digits = 0),
           average_value = mean(teamValue),
           min_value = min(teamValue),
-          max_value = max(teamValue),
           max_value = max(teamValue)
         )
       })
@@ -76,12 +103,25 @@ rank_pace |>
           rank_pace[["rank_label"]][[row_index]]
         }),
       total_points = colDef(name = "Points", width = 75, format = colFormat(separators = TRUE)),
+      mean_round_points = colDef(name = "Average", width = 80, format = colFormat(separators = TRUE)),
+      best_round_points = colDef(name = "Best", width = 75, format = colFormat(separators = TRUE)),
+      worst_round_points = colDef(name = "Worst", width = 75, format = colFormat(separators = TRUE)),
+      points_to_maintain = colDef(name = "Maintain", width = 85, format = colFormat(separators = TRUE)),
       average_value = colDef(name = "Average", width = 100, cell = \(cell_value) paste0("$", round(cell_value/1000000, 3), "m")),
       min_value = colDef(name = "Min", width = 100, cell = \(cell_value) paste0("$", round(cell_value/1000000, 3), "m")),
       max_value = colDef(name = "Max", width = 100, cell = \(cell_value) paste0("$", round(cell_value/1000000, 3), "m")),
+      best_rank_increase = colDef(name = "Best", width = 75, format = colFormat(separators = TRUE)),
+      worst_rank_decrease = colDef(name = "Worst", width = 75, format = colFormat(separators = TRUE)),
+      average_rank_change = colDef(name = "Average", width = 80, format = colFormat(separators = TRUE)),
+      best_round_rank = colDef(name = "Best", width = 75, format = colFormat(separators = TRUE)),
+      worst_round_rank = colDef(name = "Worst", width = 75, format = colFormat(separators = TRUE)),
+      average_round_rank = colDef(name = "Average", width = 80, format = colFormat(separators = TRUE)),
       rank_label = colDef(show = FALSE)
     ),
     columnGroups = list(
+      colGroup(name = paste0("Round ", parameters$round_number," Points"), columns = c("mean_round_points", "points_to_maintain", "best_round_points", "worst_round_points")),
+      colGroup(name = paste0("Round ", parameters$round_number," Rank"), columns = c("best_round_rank", "worst_round_rank", "average_round_rank")),
+      colGroup(name = "Change In Overall Rank", columns = c("best_rank_increase", "worst_rank_decrease", "average_rank_change")),
       colGroup(name = "Team Value", columns = c("average_value", "min_value", "max_value"))
       ),
     filterable = TRUE,
