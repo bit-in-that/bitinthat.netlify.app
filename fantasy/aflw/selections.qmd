@@ -347,3 +347,118 @@ role_selection_table("utility")
 
 :::
 
+
+# {{< fa square-check >}} Team Completion
+
+The tables below shows the cheapest on-field player in each line as an indication of how "complete" people's teams are.
+
+
+```{r}
+top_10000_lineups <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/raw/top_10000_lineups.parquet")
+player_data_r1 <- get_player_data(by_round = TRUE) |> 
+  filter(round == 1)  |> 
+  select(id = id, player_position = position, current_price = cost, avgPoints, starting_price = round_price)
+
+top_10000_worst_players <- top_10000_lineups |> 
+  rename(id = player_id, full_name = player_name) |> 
+  left_join(player_data_r1, by = "id") |> 
+  group_by(
+    user_id, player_position
+  ) |> 
+  mutate(
+    cost_rank = as.integer(rank(-player_cost, ties.method = "first")),
+    position_count = if_else(player_position == "RUC", 1L, 5L)
+  ) |>
+  filter(cost_rank == position_count) |> 
+  group_by(id, full_name, player_position, current_price, starting_price, avgPoints) |> 
+  summarise(
+    top_10000 = sum(overall_rank <= 10000)/10000,
+    top_5000 = sum(overall_rank <= 5000)/5000,
+    top_2000 = sum(overall_rank <= 2000)/2000,
+    top_1000 = sum(overall_rank <= 1000)/1000,
+    top_100 = sum(overall_rank <= 100)/100,
+    first = sum(overall_rank == 1),
+    .groups = "drop"
+  ) |> 
+  arrange(desc(top_1000))
+
+```
+
+```{r}
+worst_players_table <- function(position, position_text) {
+  top_10000_worst_players_position <- top_10000_worst_players |> 
+    filter(player_position == position) |> 
+    select(-player_position)
+  
+  top_10000_worst_players_position |> 
+    reactable(
+      columns = list(
+        full_name = colDef(
+          name = "Player",
+          sticky = "left",
+          cell = function(cell_value, row_index, column_name) {
+            id <- top_10000_worst_players_position[["id"]][[row_index]]
+            img_url <- paste0("https://aflwfantasy.afl/media/players/", id, "_500.webp")
+            player_url <- paste0("https://dfsaustralia.com/aflw-fantasy-player-summary/?playerId=CD_I", id)
+            tags$a(
+              tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+              " ",
+              cell_value,
+              href = player_url,
+              target = "_blank"
+            )
+          },
+          width = 200
+        ),
+        current_price = colDef(name = "Current", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, 4), "K")),
+        starting_price = colDef(name = "Start", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, 4), "K")),
+        avgPoints = colDef(name = "Average", width = 75),
+        top_10000 = colDef(name = "10K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+        top_5000 = colDef(name = "5K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+        top_2000 = colDef(name = "2K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+        top_1000 = colDef(name = "1K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+        top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 80),
+        first = colDef(name = "First🚗", format = colFormat(digits = 2, percent = TRUE), width = 80),
+        id = colDef(show = FALSE)
+      ),
+      columnGroups = list(
+        colGroup("Price", columns = c("current_price", "starting_price")),
+        colGroup(paste("Cheapest on-field ", position_text," in the top..."), columns = c("top_10000", "top_5000", "top_2000", "top_1000", "top_100", "first"))
+      ),
+      ,
+    filterable = TRUE
+    )
+  
+}
+
+```
+
+
+::: {.panel-tabset}
+
+## Defence 🛡️️
+
+```{r}
+worst_players_table("DEF", "defender")
+```
+
+## Midfield 🚂
+
+```{r}
+worst_players_table("MID", "midfielder")
+```
+
+## Ruck 🌴
+
+```{r}
+worst_players_table("RUC", "ruck")
+```
+
+## Forward 🎯
+
+```{r}
+worst_players_table("FWD", "forward")
+```
+
+:::
+
