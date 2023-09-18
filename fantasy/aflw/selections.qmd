@@ -412,20 +412,19 @@ worst_players_table <- function(position, position_text) {
         ),
         current_price = colDef(name = "Current", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, 4), "K")),
         starting_price = colDef(name = "Start", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, 4), "K")),
-        avgPoints = colDef(name = "Average", width = 75),
+        avgPoints = colDef(name = "Average", width = 80),
         top_10000 = colDef(name = "10K", format = colFormat(digits = 2, percent = TRUE), width = 80),
         top_5000 = colDef(name = "5K", format = colFormat(digits = 2, percent = TRUE), width = 80),
         top_2000 = colDef(name = "2K", format = colFormat(digits = 2, percent = TRUE), width = 80),
         top_1000 = colDef(name = "1K", format = colFormat(digits = 2, percent = TRUE), width = 80),
-        top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 80),
-        first = colDef(name = "First🚗", format = colFormat(digits = 2, percent = TRUE), width = 80),
+        top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 100),
+        first = colDef(name = "First🚗", format = colFormat(digits = 2, percent = TRUE), width = 100),
         id = colDef(show = FALSE)
       ),
       columnGroups = list(
         colGroup("Price", columns = c("current_price", "starting_price")),
         colGroup(paste("Cheapest on-field ", position_text," in the top..."), columns = c("top_10000", "top_5000", "top_2000", "top_1000", "top_100", "first"))
       ),
-      ,
     filterable = TRUE
     )
   
