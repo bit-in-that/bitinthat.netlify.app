@@ -350,7 +350,7 @@ role_selection_table("utility")
 
 # {{< fa square-check >}} Team Completion
 
-The tables below shows the cheapest on-field player in each line as an indication of how "complete" people's teams are.
+The tables below shows the cheapest on-field player in each line as an indication of how "complete" people's teams are as at the end of round `r parameters$round_number`.
 
 
 ```{r}
@@ -358,6 +358,7 @@ top_10000_lineups <- read_parquet("https://github.com/bit-in-that/data-automatio
 player_data_r1 <- get_player_data(by_round = TRUE) |> 
   filter(round == 1)  |> 
   select(id = id, player_position = position, current_price = cost, avgPoints, starting_price = round_price)
+
 
 top_10000_worst_players <- top_10000_lineups |> 
   rename(id = player_id, full_name = player_name) |> 
@@ -370,7 +371,11 @@ top_10000_worst_players <- top_10000_lineups |>
     position_count = if_else(player_position == "RUC", 1L, 5L)
   ) |>
   filter(cost_rank == position_count) |> 
-  group_by(id, full_name, player_position, current_price, starting_price, avgPoints) |> 
+  group_by(user_id) |> 
+  mutate(
+    cheapest_all = current_price == min(current_price)
+  ) |> 
+  group_by(id, full_name, player_position, current_price, starting_price, avgPoints, cheapest_all) |> 
   summarise(
     top_10000 = sum(overall_rank <= 10000)/10000,
     top_5000 = sum(overall_rank <= 5000)/5000,
@@ -379,16 +384,36 @@ top_10000_worst_players <- top_10000_lineups |>
     top_100 = sum(overall_rank <= 100)/100,
     first = sum(overall_rank == 1),
     .groups = "drop"
-  ) |> 
-  arrange(desc(top_1000))
+  )
+
 
 ```
 
 ```{r}
 worst_players_table <- function(position, position_text) {
-  top_10000_worst_players_position <- top_10000_worst_players |> 
-    filter(player_position == position) |> 
-    select(-player_position)
+  is_all <- position == "ALL"
+  if(is_all) {
+    top_10000_worst_players_position <- top_10000_worst_players |> 
+      filter(cheapest_all) |> 
+      select(-cheapest_all) |> 
+      arrange(desc(top_10000))
+
+  } else {
+    top_10000_worst_players_position <- top_10000_worst_players |>
+      group_by(id, full_name, player_position, current_price, starting_price, avgPoints) |> 
+      summarise(
+        top_10000 = sum(top_10000),
+        top_5000 = sum(top_5000),
+        top_2000 = sum(top_2000),
+        top_1000 = sum(top_1000),
+        top_100 = sum(top_100),
+        first = sum(first),
+        .groups = "drop"
+        ) |> 
+      filter(player_position == position) |> 
+      arrange(desc(top_10000))
+    
+  }
   
   top_10000_worst_players_position |> 
     reactable(
@@ -419,6 +444,7 @@ worst_players_table <- function(position, position_text) {
         top_1000 = colDef(name = "1K", format = colFormat(digits = 2, percent = TRUE), width = 80),
         top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 100),
         first = colDef(name = "First🚗", format = colFormat(digits = 2, percent = TRUE), width = 100),
+        player_position = colDef(name = "Position", width = 80, show = is_all),
         id = colDef(show = FALSE)
       ),
       columnGroups = list(
@@ -434,6 +460,12 @@ worst_players_table <- function(position, position_text) {
 
 
 ::: {.panel-tabset}
+
+## All Positions 🌱
+
+```{r}
+worst_players_table("ALL", "player")
+```
 
 ## Defence 🛡️️
 
