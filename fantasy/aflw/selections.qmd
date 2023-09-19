@@ -375,7 +375,7 @@ top_10000_worst_players <- top_10000_lineups |>
   mutate(
     cheapest_all = current_price == min(current_price)
   ) |> 
-  group_by(id, full_name, player_position, current_price, starting_price, avgPoints, cheapest_all) |> 
+  group_by(id, full_name, player_position, starting_price, current_price, avgPoints, cheapest_all) |> 
   summarise(
     top_10000 = sum(overall_rank <= 10000)/10000,
     top_5000 = sum(overall_rank <= 5000)/5000,
@@ -400,7 +400,7 @@ worst_players_table <- function(position, position_text) {
 
   } else {
     top_10000_worst_players_position <- top_10000_worst_players |>
-      group_by(id, full_name, player_position, current_price, starting_price, avgPoints) |> 
+      group_by(id, full_name, player_position, starting_price, current_price, avgPoints) |> 
       summarise(
         top_10000 = sum(top_10000),
         top_5000 = sum(top_5000),
