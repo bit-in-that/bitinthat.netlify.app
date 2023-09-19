@@ -350,6 +350,8 @@ role_selection_table("utility")
 
 # {{< fa square-check >}} Team Completion
 
+## Cheapest Player on Field
+
 The tables below shows the cheapest on-field player in each line as an indication of how "complete" people's teams are as at the end of round `r parameters$round_number`.
 
 
@@ -360,16 +362,18 @@ player_data_r1 <- get_player_data(by_round = TRUE) |>
   select(id = id, player_position = position, current_price = cost, avgPoints, starting_price = round_price)
 
 
-top_10000_worst_players <- top_10000_lineups |> 
+top_10000_lineups <- top_10000_lineups |> 
   rename(id = player_id, full_name = player_name) |> 
   left_join(player_data_r1, by = "id") |> 
-  group_by(
+    group_by(
     user_id, player_position
   ) |> 
   mutate(
     cost_rank = as.integer(rank(-player_cost, ties.method = "first")),
     position_count = if_else(player_position == "RUC", 1L, 5L)
-  ) |>
+  )
+
+top_10000_worst_players <- top_10000_lineups |> 
   filter(cost_rank == position_count) |> 
   group_by(user_id) |> 
   mutate(
@@ -435,8 +439,8 @@ worst_players_table <- function(position, position_text) {
           },
           width = 200
         ),
-        current_price = colDef(name = "Current", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, 4), "K")),
-        starting_price = colDef(name = "Start", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, 4), "K")),
+        current_price = colDef(name = "Current", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, digits = 0), "K")),
+        starting_price = colDef(name = "Start", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, digits = 0), "K")),
         avgPoints = colDef(name = "Average", width = 80),
         top_10000 = colDef(name = "10K", format = colFormat(digits = 2, percent = TRUE), width = 80),
         top_5000 = colDef(name = "5K", format = colFormat(digits = 2, percent = TRUE), width = 80),
@@ -493,3 +497,185 @@ worst_players_table("FWD", "forward")
 
 :::
 
+
+## Team Structure
+
+```{r}
+tier_weightings <- tribble(
+  ~ player_position, ~ tier, ~ lower_bound,
+  "DEF", "Rookie", 0L, 
+  "DEF", "Mid-pricer", 500000L,
+  "DEF", "Premium", 700000L,
+  "MID", "Rookie", 0L, 
+  "MID", "Mid-pricer", 900000L,
+  "MID", "Premium", 1200000L,
+  "RUC", "Rookie", 0L,
+  "RUC", "Mid-pricer", 600000L,
+  "RUC", "Premium", 850000L,
+  "FWD", "Rookie", 0L,
+  "FWD", "Mid-pricer", 600000L,
+  "FWD", "Premium", 850000L
+) |> 
+  group_by(player_position) |> 
+  mutate(
+    upper_bound = c(tail(lower_bound, n = -1), 9999999),
+    weighting = case_when(
+      tier == "Rookie" ~ 0,
+      tier == "Mid-pricer" ~ 0.5,
+      tier == "Premium" ~ 1
+    )
+  )
+
+
+top_10000_lineups_structure <- top_10000_lineups |> # is already grouped by user_id, player_position
+  mutate(
+    cash_on_bench = sum((cost_rank > position_count) * current_price)
+  ) |> 
+  filter(cost_rank <= position_count) |> 
+  left_join(tier_weightings, join_by(player_position, current_price > lower_bound, current_price <= upper_bound)) |> 
+  group_by(user_id, overall_rank, player_position, cash_on_bench) |> 
+  summarise(
+    premium_count = sum(weighting),
+    cash_on_bench = head(cash_on_bench, n = 1),
+    .groups = "drop"
+  ) |> 
+  pivot_wider(id_cols = c("user_id", "overall_rank"), names_from = "player_position", values_from = c("premium_count", "cash_on_bench")) |> 
+  mutate(
+    premium_count_total = premium_count_DEF + premium_count_MID + premium_count_RUC + premium_count_FWD,
+    cash_on_bench_total = cash_on_bench_DEF + cash_on_bench_MID + cash_on_bench_RUC + cash_on_bench_FWD
+    )
+
+
+top_10000_team_structure <- top_10000_lineups_structure |> 
+  group_by(premium_count_DEF, premium_count_MID, premium_count_RUC, premium_count_FWD, premium_count_total) |> 
+  summarise(
+    top_10000 = sum(overall_rank <= 10000)/10000,
+    top_5000 = sum(overall_rank <= 5000)/5000,
+    top_2000 = sum(overall_rank <= 2000)/2000,
+    top_1000 = sum(overall_rank <= 1000)/1000,
+    top_100 = sum(overall_rank <= 100)/100,
+    first = sum(overall_rank == 1),
+    cash_on_bench_min = min(cash_on_bench_total),
+    cash_on_bench_max = max(cash_on_bench_total),
+    cash_on_bench_mean = round(mean(cash_on_bench_total), digits = 0),
+    .groups = "drop"
+  ) |> 
+  arrange(desc(top_5000)) |> 
+  filter(top_5000 > 0)
+
+
+
+```
+
+
+::: {.panel-tabset}
+
+### Top 10k team structures
+
+```{r}
+top_10000_team_structure |> 
+  reactable(
+    columns = list(
+      top_10000 = colDef(name = "10K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+      top_5000 = colDef(name = "5K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+      top_2000 = colDef(name = "2K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+      top_1000 = colDef(name = "1K", format = colFormat(digits = 2, percent = TRUE), width = 80),
+      top_100 = colDef(name = "100🧢", format = colFormat(digits = 2, percent = TRUE), width = 100),
+      first = colDef(name = "First🚗", format = colFormat(digits = 2, percent = TRUE), width = 100),
+      premium_count_DEF = colDef(
+        name = "DEF", 
+        width = 100,
+        cell = function(cell_value, row_index, column_name) {
+          tagList(
+            tags$sup(tags$b(cell_value)), "⁄", 
+            tags$sub("5")
+            )
+          }),
+      premium_count_MID = colDef(
+        name = "MID", 
+        width = 100,
+        cell = function(cell_value, row_index, column_name) {
+          tagList(
+            tags$sup(tags$b(cell_value)), "⁄", 
+            tags$sub("5")
+            )
+          }), 
+      premium_count_RUC = colDef(
+        name = "RUC", 
+        width = 100,
+        cell = function(cell_value, row_index, column_name) {
+          tagList(
+            tags$sup(tags$b(cell_value)), "⁄", 
+            tags$sub("1")
+            )
+          }), 
+      premium_count_FWD = colDef(
+        name = "FWD", 
+        width = 100,
+        cell = function(cell_value, row_index, column_name) {
+          tagList(
+            tags$sup(tags$b(cell_value)), "⁄", 
+            tags$sub("5")
+            )
+          }), 
+      premium_count_total = colDef(
+        name = "Total", 
+        width = 100,
+        cell = function(cell_value, row_index, column_name) {
+          tagList(
+            tags$sup(tags$b(cell_value)), "⁄", 
+            tags$sub("16")
+            )
+          }),
+      cash_on_bench_min = colDef(name = "Min", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, digits = 0), "K")),
+      cash_on_bench_max = colDef(name = "Max", width = 75, cell = \(cell_value) paste0("$", round(cell_value/1000, digits = 0), "K")),
+      cash_on_bench_mean = colDef(name = "Average", width = 100, cell = \(cell_value) paste0("$", round(cell_value/1000, digits = 0), "K"))
+      ),
+    columnGroups = list(
+      colGroup("Team structure in the top...", columns = c("top_10000", "top_5000", "top_2000", "top_1000", "top_100", "first")),
+      colGroup("Premium Count", columns = c("premium_count_DEF", "premium_count_MID", "premium_count_RUC", "premium_count_FWD", "premium_count_total")),
+      colGroup("Cash on the bench", columns = c("cash_on_bench_mean", "cash_on_bench_min", "cash_on_bench_max"))
+    ),
+    filterable = TRUE
+  )
+```
+Note that only team structure that were present in the top 5K are presented above to reduce the size of the table.
+
+### Premium Count Explanation
+
+The premium counts in the other tab are allocated according to the table below (1 for a premium, 0.5 for a mid-pricer and 0 for a rookie). The price ranges are arbitrary but represent a decent proxy for the labels "rookie", "mid-pricer" and "premium".
+
+
+```{r}
+tier_weightings |> 
+  reactable(
+    columns = list(
+      player_position = colDef(name = "Position", width = 100),
+      tier = colDef(name = "Tier", width = 100),
+      lower_bound = colDef(name = "Lower", width = 75, cell = \(cell_value) {
+        if(cell_value < 1) {
+          ""
+        } else {
+          paste0("$", round(cell_value/1000, digits = 0), "K")
+        }
+        }),
+      upper_bound = colDef(name = "Upper", width = 100, cell = \(cell_value)         
+         if(cell_value > 2000000) {
+          ""
+        } else {
+          paste0("$", round(cell_value/1000, digits = 0), "K")
+        }),
+      weighting = colDef("Weighting", width = 100)
+    ),
+    columnGroups = list(
+      colGroup(
+        "Price Range", columns = c("lower_bound", "upper_bound")
+      )
+    ),
+    filterable = TRUE,
+    pagination = FALSE
+  )
+```
+
+
+:::
