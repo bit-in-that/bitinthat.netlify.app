@@ -64,7 +64,7 @@ website:
         menu:
           - text: "<b>AFLW</b>"
           - href: "players/aflw/index.qmd"
-            text: "Player List"
+            text: "Player Data"
             icon: card-list
           - text: "<b>AFL</b>"
     right:

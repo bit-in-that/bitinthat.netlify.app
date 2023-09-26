@@ -1,20 +1,206 @@
 ---
-title: "AFLW Players"
-execute:
-  echo: false
-freeze: true
-listing:
-  - id: aflw-players
-    categories: true
-    contents: players.yaml
-    type: grid
-    filter-ui: [title, categories]
-    fields: [image, title, description, categories]
+title: "AFLW Player Data"
 ---
 
+```{r}
+#| message: false
+library(reactable)
+library(htmltools)
+library(tippy)
+library(bslib)
+library(arrow)
+library(stringr)
+library(data.table)
+library(dplyr)
+library(purrr)
 
-Below is a list of AFLW players. In future these will link to my own custom player profiles but for now they will just link to their profiles on DFS Australia.
+source("../../parameters.R")
 
-:::{#aflw-players}
+source("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/modules/get_player_data_afw.R")
+player_data <- get_player_data()
+player_data_round <- get_player_data(by_round = TRUE)
+
+player_details_all <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/players/data/raw/player_details_all.parquet")
+
+player_data_columns <- as_tibble(fread("../player_data_column_info.csv"))
+
+
+aflw_player_details <- player_details_all |> 
+  filter(
+    competition_name_lookup == "AFLW", year ==2023
+  ) |>
+  select(
+    id = playerId,
+    playerDetails.heightCm,
+    playerDetails.age,
+    date_of_birth = playerDetails.dateOfBirth,
+    playerDetails.stateOfOrigin,
+    # recruited_from = playerDetails.recruitedFrom,
+    starts_with("averages")
+  ) |> 
+  select(-averages.ranking, -averages.ratingPoints, -averages.superGoals, -averages.fantasy_points, 
+         -averages.turnovers, -averages.matchesPlayed, -averages.dreamTeamPoints) |>
+  mutate(
+    date_of_birth = as.Date(date_of_birth, format = "%e/%m/%Y")
+  )  |> 
+  rename_with(~ {
+    .x |>
+      str_remove("^averages\\.") #|>
+  }, .cols = starts_with("averages")) |> 
+  relocate(goals, .before = behinds) |> 
+  relocate(kicks, .before = handballs)
+
+season_stat_names <- aflw_player_details |> 
+  select(behinds:tacklesInside50) |> 
+  names()
+
+player_data_restricted <- player_data |> 
+  mutate(
+      id = paste0("CD_I", id),
+      gamesPlayed  = if_else(is.na(gamesPlayed), 0L, gamesPlayed)
+    ) |> 
+  select(id, full_name, squad_name, gamesPlayed, position, cost, avgPoints, avgPointsLast3, avgPointsLast5, seasonPriceChange, lastRoundPriceChange) |> 
+  left_join(aflw_player_details, by = "id") |> 
+  arrange(desc(cost)) |> 
+  relocate(id, .before = playerDetails.heightCm)
+
+
+```
+
+
+```{=html}
+<script>
+download_table = function() {
+  Reactable.downloadDataCSV('player-data')
+}
+</script>
+```
+
+
+
+```{r}
+format_price <- function(cell_value) {
+  sign_prefix <- if(cell_value < 0) "-" else ""
+  paste0(sign_prefix, "$", format(round(abs(cell_value/1000), digits = 0), big.mark = ","), "K")
+}
+
+format_date <- function(cell_value) {
+  if(is.na(cell_value)) {
+    ""
+  } else {
+    format(cell_value, format = "%e %b %Y")
+  }
+}
+
+```
+
+
+```{r}
+# player_data_restricted
+
+# TODO: for individual players create this and save as a RDS (generate in separate script), then whenever the full colDef is needed, it can be read in
+
+verbose_name_map <- player_data_columns$verbose_name |> 
+  `names<-`(player_data_columns$column_name)
+
+hover_over_verbose_name <- function(header_value, column_name){
+  tippy(header_value, verbose_name_map[column_name])
+  }
+
+
+reactable_specification <- player_data_columns |>
+  filter(
+   column_name %in% names(player_data_restricted)
+  ) |> 
+  mutate(
+    colDefs_base = abbreviated_name |> 
+      map2(width, ~ colDef(name = .x, header = hover_over_verbose_name, minWidth = .y)) |> 
+      `names<-`(column_name),
+     colDefs_base = case_when(
+       is_price ~ map(colDefs_base, ~ structure(c(.x, list(cell = format_price)),  class = "colDef")),
+       is_date ~ map(colDefs_base, ~ structure(c(.x, list(cell = format_date)),  class = "colDef")),
+       TRUE ~ colDefs_base
+      ),
+    colDefs_default = colDefs_base |> 
+      map2(default_stats, ~ structure(c(.x, list(show = .y)),  class = "colDef")),
+    colDefs_basic = colDefs_base |> 
+      map2(basic_stats, ~ structure(c(.x, list(show = .y)),  class = "colDef"))
+  )
+
+colGroups_default <- reactable_specification |> 
+  group_by(grouping) |> 
+  summarise(
+    columns = list(column_name)
+  ) |> 
+  mutate(
+    colGroups_default = map2(grouping, columns, ~ colGroup(name = .x, columns = .y, headerStyle = list("white-space" = "nowrap")))
+  ) |> 
+  pull()
+
+additional_columns <- list(
+  full_name = colDef(
+    name = "Player",
+    sticky = "left",
+    cell = function(cell_value, row_index, column_name) {
+      id <- player_data_restricted[["id"]][[row_index]]
+      img_url <- paste0("https://aflwfantasy.afl/media/players/", str_remove(id, "CD_I"), "_500.webp")
+      player_url <- paste0("https://dfsaustralia.com/aflw-fantasy-player-summary/?playerId=", id)
+      tags$a(
+        tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+        " ",
+        cell_value,
+        href = player_url,
+        target = "_blank"
+        )
+      },
+    width = 200)
+  )
+
+
+player_data_basic <- player_data_restricted |> 
+  reactable(
+    columns = c(reactable_specification$colDefs_basic, additional_columns),
+    columnGroups = colGroups_default,
+    elementId = "player-data",
+    filterable = TRUE
+    )
+
+player_data_default <- player_data_restricted |> 
+  reactable(
+    columns = c(reactable_specification$colDefs_default, additional_columns),
+    columnGroups = colGroups_default,
+    elementId = "player-data-default",
+    filterable = TRUE
+    )
+
+
+
+```
+
+
+::: {.panel-tabset}
+
+## Basic
+
+```{r}
+tagList(
+  tags$button("Download as CSV", onclick = "download_table()"),
+  tags$button("Show All", onclick = "Reactable.setHiddenColumns('player-data', [''])"),
+  player_data_basic
+)
+
+```
+
+## Main
+
+```{r}
+tagList(
+  tags$button("Download as CSV", onclick = "download_table()"),
+  tags$button("Show All", onclick = "Reactable.setHiddenColumns('player-data-default', [''])"),
+  player_data_default
+)
+
+```
+
+
 :::
-
