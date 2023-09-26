@@ -505,7 +505,7 @@ tier_weightings <- tribble(
   ~ player_position, ~ tier, ~ lower_bound,
   "DEF", "Rookie", 0L, 
   "DEF", "Mid-pricer", 500000L,
-  "DEF", "Premium", 700000L,
+  "DEF", "Premium", 750000L,
   "MID", "Rookie", 0L, 
   "MID", "Mid-pricer", 900000L,
   "MID", "Premium", 1200000L,

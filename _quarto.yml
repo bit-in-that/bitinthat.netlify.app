@@ -59,14 +59,14 @@ website:
           - href: "fantasy/afl/top_coaches.qmd"
             text: "Top Coaches"
             icon: patch-check
-      # - text: Players
-      #   icon: person
-      #   menu:
-      #     - text: "<b>AFLW</b>"
-      #     - href: "players/aflw/index.qmd"
-      #       text: "Player List"
-      #       icon: card-list
-      #     - text: "<b>AFL</b>"
+      - text: Players
+        icon: person
+        menu:
+          - text: "<b>AFLW</b>"
+          - href: "players/aflw/index.qmd"
+            text: "Player Data"
+            icon: card-list
+          - text: "<b>AFL</b>"
     right:
       - icon: github
         href: https://github.com/bit-in-that
