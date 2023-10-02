@@ -80,8 +80,13 @@ download_table = function() {
 
 ```{r}
 format_price <- function(cell_value) {
-  sign_prefix <- if(isTRUE(cell_value < 0)) "" else "-"
-  paste0(sign_prefix, "$", format(round(abs(cell_value/1000), digits = 0), big.mark = ","), "K")
+  if(is.na(cell_value)) {
+    ""
+  } else {
+    sign_prefix <- if(cell_value > 0) "" else "-"
+    paste0(sign_prefix, "$", format(round(abs(cell_value/1000), digits = 0), big.mark = ","), "K")
+    
+  }
 }
 
 format_date <- function(cell_value) {
