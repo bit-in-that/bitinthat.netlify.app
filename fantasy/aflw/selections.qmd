@@ -511,10 +511,10 @@ tier_weightings <- tribble(
   "MID", "Premium", 1200000L,
   "RUC", "Rookie", 0L,
   "RUC", "Mid-pricer", 600000L,
-  "RUC", "Premium", 850000L,
+  "RUC", "Premium", 900000L,
   "FWD", "Rookie", 0L,
   "FWD", "Mid-pricer", 600000L,
-  "FWD", "Premium", 850000L
+  "FWD", "Premium", 900000L
 ) |> 
   group_by(player_position) |> 
   mutate(
