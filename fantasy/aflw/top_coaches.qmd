@@ -235,7 +235,7 @@ content_creators_ranks |>
 ```{r}
 overall_rank_data <- ranking_data |> 
   filter(
-    overallRank %in% 1:100
+    overallRank %in% 1:1000
   ) |> 
   arrange(overallRank)
 
