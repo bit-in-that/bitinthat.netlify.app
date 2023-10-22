@@ -230,13 +230,16 @@ content_creators_ranks |>
 
 ::: {.panel-tabset}
 
-## Top 100 Rank 🧢
+## Top 1000 Rank 🧢
 
 ```{r}
-ranking_data |> 
+overall_rank_data <- ranking_data |> 
   filter(
     overallRank %in% 1:100
   ) |> 
+  arrange(overallRank)
+
+overall_rank_data |> 
   select(teamName, overallRank, totalPoints, roundRank, roundPoints, teamValue, value_rank) |> 
     reactable(
     columns = list(
@@ -244,8 +247,8 @@ ranking_data |>
         name = "Fantasy Team",
         sticky = "left",
         cell = function(cell_value, row_index, column_name) {
-          img_url <- ranking_data[["img_url"]][[row_index]]
-          fantasy_url <- ranking_data[["fantasy_url"]][[row_index]]
+          img_url <- overall_rank_data[["img_url"]][[row_index]]
+          fantasy_url <- overall_rank_data[["fantasy_url"]][[row_index]]
           tags$a(
             tags$img(src = img_url, style = "height: 24px;width: 24px;"),
             " ",
@@ -274,18 +277,19 @@ ranking_data |>
 
 ```
 
-## Top 100 Week 🏈
+## Top 1000 Week 🏈
 
 
 ```{r}
+
 round_rank_data <- ranking_data |> 
   filter(
-    roundRank %in% 1:100
+    roundRank %in% 1:1000
   ) |> 
   arrange(roundRank)
 
 round_rank_data |> 
-  select(teamName, roundRank, roundPoints, overallRank, totalPoints, teamValue, value_rank) |> 
+  select(teamName, roundRank, roundPoints, overallRank, totalPoints, teamValue, value_rank) |>
     reactable(
     columns = list(
       teamName = colDef(
@@ -326,22 +330,24 @@ round_rank_data |>
 
 
 ```{r}
-ranking_data |> 
+value_data <- ranking_data |> 
   filter(
-    value_rank %in% 1:100
+    value_rank %in% 1:1000
   ) |> 
   arrange(
     value_rank
-  ) |> 
+  ) 
+
+value_data |>
   select(teamName, teamValue, value_rank, overallRank, totalPoints, roundRank, roundPoints) |> 
-    reactable(
+  reactable(
     columns = list(
       teamName = colDef(
         name = "Fantasy Team",
         sticky = "left",
         cell = function(cell_value, row_index, column_name) {
-          img_url <- ranking_data[["img_url"]][[row_index]]
-          fantasy_url <- ranking_data[["fantasy_url"]][[row_index]]
+          img_url <- value_data[["img_url"]][[row_index]]
+          fantasy_url <- value_data[["fantasy_url"]][[row_index]]
           tags$a(
             tags$img(src = img_url, style = "height: 24px;width: 24px;"),
             " ",
