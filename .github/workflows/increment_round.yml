@@ -2,8 +2,8 @@ name: Increment Round Number
 
 on: 
   workflow_dispatch:
-  schedule:
-    - cron: "50 3 * * 1" # 1:50PM every monday
+ # schedule:
+ #   - cron: "50 3 * * 1" # 1:50PM every monday
   # push:
   #   branches:
   #     - main
