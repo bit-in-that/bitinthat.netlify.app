@@ -2,6 +2,7 @@
 title: "AFLW Fantasy Top Coaches"
 execute:
   echo: false
+freeze: true
 ---
 
 ```{r}
