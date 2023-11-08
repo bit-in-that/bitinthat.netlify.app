@@ -29,7 +29,7 @@ top_10000_selections <- read_parquet("https://github.com/bit-in-that/data-automa
   -player_name, -player_score, -player_selections, -player_cost
 )
 
-afw_player_selections_lockout <- read_parquet(paste0("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/raw/afw_player_selections_lockout_round", parameters$round_number -1 , ".parquet"))
+afw_player_selections_lockout <- read_parquet(paste0("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/raw/afw_player_selections_lockout_round", parameters$round_number , ".parquet"))
 
 
 player_selection_data <- player_data |> 
@@ -89,7 +89,7 @@ player_selection_data <- player_data |>
 
 ## Top Coaches 🧢🚗
 
-Note that the selections below are as at the end of round `r parameters$round_number -1 ` (trades since then are not included).
+Note that the selections below are as at the end of round `r parameters$round_number ` (trades since then are not included).
 
 ```{r}
 
@@ -190,7 +190,7 @@ live_selections |>
       cost = colDef(name = "Price", width = 100, cell = \(cell_value) paste0(format(cell_value/1000, big.mark = ","), "K"), show = FALSE),
       avgPoints = colDef(name = "Average", width = 100, show = FALSE),
       selections = colDef(name = "Midweek", format = colFormat(digits = 2, percent = TRUE), width = 100),
-      selections_round_end = colDef(name = paste0("Round ", parameters$round_number -1 ), format = colFormat(digits = 2, percent = TRUE), width = 100),
+      selections_round_end = colDef(name = paste0("Round ", parameters$round_number ), format = colFormat(digits = 2, percent = TRUE), width = 100),
       selections_change = colDef(name = "Change", format = colFormat(digits = 2, percent = TRUE), width = 100),
       id = colDef(show = FALSE)
     ),
@@ -211,7 +211,7 @@ live_selections |>
 # {{< fa chair >}} Role-Based Selections
 
 
-Note that the selections below are as at the end of round `r parameters$round_number -1 ` (trades since then are not included).
+Note that the selections below are as at the end of round `r parameters$round_number ` (trades since then are not included).
 
 ```{r}
 
@@ -353,7 +353,7 @@ role_selection_table("utility")
 
 ## Cheapest Player on Field
 
-The tables below shows the cheapest on-field player in each line as an indication of how "complete" people's teams are as at the end of round `r parameters$round_number -1 `.
+The tables below shows the cheapest on-field player in each line as an indication of how "complete" people's teams are as at the end of round `r parameters$round_number `.
 
 
 ```{r}
