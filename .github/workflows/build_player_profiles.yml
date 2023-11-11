@@ -1,8 +1,8 @@
 name: Build player profiles
 
 on:
-  workflow_dispatch: build_player_profiles
-  
+  workflow_dispatch: 
+  branches: build_player_profiles
   
 jobs:
   build:
