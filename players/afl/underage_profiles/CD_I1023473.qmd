@@ -1,0 +1,207 @@
+---
+title: "Nick Watson"
+freeze: true
+params:
+  player_first_name: "Nick"
+  player_surname: "Watson"
+---
+
+
+```{r}
+#| message: false
+library(reactable)
+library(arrow)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(htmltools)
+library(stringr)
+
+combine_player_details <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/players/data/processed/combine_player_details.parquet") |> 
+  filter(player_first_name == params$player_first_name, player_surname == params$player_surname)
+
+playerIds <- combine_player_details$playerIds[[1]]
+
+season_data_table <- read_parquet("../../../_tempates/draft_prospects/season_data_table.parquet") |> 
+  filter(
+    playerId %in% playerIds
+  )
+
+match_data_table <- read_parquet("../../../_tempates/draft_prospects/match_data_table.parquet") |> 
+  filter(
+    playerId %in% playerIds
+  )
+
+```
+
+
+```{r}
+
+create_html_table <- function(row_list) {
+  row_list <- row_list |> 
+    imap(~{
+      tags$tr(
+        tags$td(tags$b(paste0(.y, ":"))),
+        tags$td(.x)
+      )
+    })
+  
+  # do.call(tags$table, row_list)
+  tags$table(row_list)
+}
+
+```
+
+
+::: {.callout-warning}
+
+### Data Disclaimer
+
+Note that data for the interstate underage competition ("AFL U18 Championships") are missing behind and free kick data, as such these items are omitted from the calculation of fantasy points and left blank in any tables they are present in.
+
+:::
+
+## Player Details
+
+
+::: {.callout-tip collapse="true"}
+
+### Images
+
+```{r}
+combine_player_details$player_images[[1]] |> 
+  map(~tags$img(src = .x)) |> 
+  tags$span()
+```
+
+:::
+
+
+
+
+```{r}
+
+combine_player_details |> 
+  transmute(
+    `Date of Birth` = date_of_birth, State = state, `State League Club` = state_league_club,
+    `Community Club` = community_club, Height = paste0(player_height_range, "cm"), Weight = paste0(player_weight_range, "kg"),
+    Urls = player_urls |> map(~{
+      link_labels <- case_when(
+        str_detect(.x, "wafl.com.au") ~ "WAFL",
+        str_detect(.x,"central.rookieme.com") ~ "Rookie Me Central",
+        str_detect(.x, "www.afl.com.au") ~ "AFL",
+        str_detect(.x, "sanfl.com.au") ~ "SANFL"
+      )
+      
+      map2(.x, link_labels, \(player_url, link_label) {
+        p(
+          tags$a(
+            link_label, href = player_url, target = "_blank"
+          )
+        )
+      })
+    }),
+    `Phantom Draft Ranking (Afl)` = phantom_draft_afl, 
+    `Phantom Draft Ranking (Sporting News)` = phantom_draft_sporting_news, 
+    `Phantom Draft Ranking (Fox Sports)` = phantom_draft_fox_sports, 
+    `Phantom Draft Ranking (Abc)` = phantom_draft_abc
+  ) |> 
+  create_html_table()
+```
+
+
+## Seasons
+
+
+```{r}
+season_data_table |> 
+  select(-playerId) |> 
+  reactable(
+    columns = list(
+      season = colDef(name = "Season", sticky = "left"),
+      tier = colDef(name = "Tier", sticky = "left"),
+      comp_name = colDef(name = "Competition"),
+      games_played = colDef(name = "Games"),
+      fantasy_ceiling = colDef(name = "Ceiling"),
+      fantasy_floor = colDef(name = "Floor"),
+      fantasy_points = colDef(name = "Average", format = colFormat(digits = 1)),
+      goals = colDef(name = "Goals", format = colFormat(digits = 1)),
+      behinds = colDef(name = "Behinds", format = colFormat(digits = 1)),
+      kicks = colDef(name = "Kicks", format = colFormat(digits = 1)),
+      handballs = colDef(name = "Handballs", format = colFormat(digits = 1)),
+      disposals = colDef(name = "Disposals", format = colFormat(digits = 1)),
+      marks = colDef(name = "Marks", format = colFormat(digits = 1)),
+      tackles = colDef(name = "Tackles", format = colFormat(digits = 1)),
+      hitouts = colDef(name = "Hitouts", format = colFormat(digits = 1)),
+      frees_for = colDef(name = "Frees For", format = colFormat(digits = 1)),
+      frees_against = colDef(name = "Frees Against", format = colFormat(digits = 1))
+    ),
+    columnGroups = list(
+      colGroup(name = "AFL Fantasy", columns = c("fantasy_ceiling", "fantasy_floor", "fantasy_points")),
+      colGroup(name = "Average Stats", columns = c("goals", "behinds", "kicks", "handballs", "disposals", "marks", "tackles", "hitouts", "frees_for", "frees_against"))
+    ),
+    filterable = TRUE
+  )
+
+```
+
+
+## Matches
+
+Note that times below are (unfortunately) in Sydney/Melbourne time (in future I would like to make them local time instead).
+
+```{r}
+
+match_data_table |> 
+  select(-playerId) |> 
+  reactable(
+    columns = list(
+      match_time = colDef(
+        name = "Time", sticky = "left", cell = function(cell_value, row_index, column_name){
+          match_url <- match_data_table[["match_url"]][[row_index]]
+          tags$a(
+            format(cell_value, format = "%e/%m/%Y\n%I:%M %p", tz = "Australia/Melbourne"),
+            href = match_url,
+            target = "_blank"
+          )
+        }
+      ),
+      match_url = colDef(show = FALSE),
+      is_home = colDef(show = FALSE),
+      team_name = colDef(name = "Team"),
+      opposition_name = colDef(name = "Opposition", cell = function(cell_value, row_index, column_name){
+        is_home <- match_data_table[["is_home"]][[row_index]]
+        if(is_home) {
+          paste("vs.", cell_value)
+        } else {
+          paste("@", cell_value)
+        }
+      }),
+      tier = colDef(name = "Tier"),
+      match_type = colDef(name = "Type"),
+      round_abbreviation = colDef(name = "Round"),
+      comp_name = colDef(name = "Competition"),
+      position = colDef(name = "Position"),
+      fantasy_points = colDef(name = "Fantasy Points"),
+      goals = colDef(name = "Goals"),
+      behinds = colDef(name = "Behinds"),
+      kicks = colDef(name = "Kicks"),
+      handballs = colDef(name = "Handballs"),
+      disposals = colDef(name = "Disposals"),
+      marks = colDef(name = "Marks"),
+      tackles = colDef(name = "Tackles"),
+      hitouts = colDef(name = "Hitouts"),
+      frees_for = colDef(name = "Frees For"),
+      frees_against = colDef(name = "Frees Against")
+    ),
+    columnGroups = list(
+      colGroup(name = "Match Info", columns = c("tier", "comp_name", "match_type", "round_abbreviation", "team_name", "opposition_name")),
+      colGroup(name = "Average Stats", columns = c("fantasy_points", "goals", "behinds", "kicks", "handballs", "disposals", "marks", "tackles", "hitouts", "frees_for", "frees_against"))
+    ),
+    filterable = TRUE,
+    pagination = FALSE,
+    height = 300
+  )
+
+```
+

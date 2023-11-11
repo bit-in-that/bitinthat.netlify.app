@@ -57,12 +57,7 @@ combine_player_details |>
     first_playerId = map_chr(playerIds, head, n = 1)
   ) |>
 with({
-  for(index in seq_along(first_playerId)) {
-    id = first_playerId[index]
-    first_name = player_first_name[index]
-    surname = player_surname[index]
-    gender = gender[index]
-  # pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
+  pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
     if(gender == "male") {
       folder_path <- male_folder_path
     } else {
@@ -75,8 +70,7 @@ with({
       str_replace_all(fixed("||player_first_name||"), first_name) |>
       str_replace_all(fixed("||player_surname||"), surname) |>
       writeLines(paste0(folder_path, id, ".qmd"))
-  # })
-  }
+  })
 })
 
 try({
