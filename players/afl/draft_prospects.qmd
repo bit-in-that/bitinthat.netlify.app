@@ -1,0 +1,137 @@
+---
+title: "AFL Player Data"
+freeze: true
+---
+
+```{r}
+#| message: false
+library(reactable)
+library(arrow)
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(htmltools)
+
+combine_player_details <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/players/data/processed/combine_player_details.parquet")
+
+# TODO: add the sources for the phantom draft orders
+# TODO: add birth date and age as at 31 December 2023
+# TODO: add venue to matches
+# TODO: put time in local instead of AEST
+# TODO: add team
+
+```
+
+
+```{r}
+phantom_draft_formatter <- function(cell_value, row_index, column_name) {
+  if(cell_value == 999L) {
+    ""
+    } else {
+      cell_value
+    }
+  }
+```
+
+::: {.callout-warning}
+
+### Data Disclaimer
+
+Note that data for the interstate underage competition ("AFL U18 Championships") are missing behind and free kick data, as such these items are omitted from the calculation of fantasy points.
+
+:::
+
+
+
+```{r}
+
+player_data_table <- combine_player_details |> 
+  filter(gender == "male") |> 
+  mutate(
+    player_name = paste(player_first_name, player_surname),
+    phantom_draft_afl = coalesce(phantom_draft_afl, 999L),
+    phantom_draft_sporting_news = coalesce(phantom_draft_sporting_news, 999L),
+    phantom_draft_fox_sports = coalesce(phantom_draft_fox_sports, 999L),
+    phantom_draft_abc = coalesce(phantom_draft_abc, 999L)
+    ) |> 
+  relocate(player_name, .before = "state")
+
+player_data_table |> 
+  select(-gender, -national_combine, -player_first_name, -player_surname, -playerIds, 
+         -player_urls, -player_images, -player_height_range, -player_weight_range, 
+         -player_height_min, -player_weight_min, -playerId) |>
+  reactable(
+    columns = list(
+      player_name = colDef(
+        name = "Player",
+        sticky = "left",
+        cell = function(cell_value, row_index, column_name) {
+          player_url <- player_data_table[["player_url"]][[row_index]]
+          player_image <- player_data_table[["player_image"]][[row_index]]
+          tags$a(
+            tags$img(src = player_image, style = "height: 30px;"
+                     ),
+            " ",
+            cell_value,
+            href = player_url,
+            target = "_blank"
+          )
+        },
+        width = 200
+      ),
+      state = colDef(name = "State"),
+      state_league_club = colDef(name = "State League Club", width = 150),
+      community_club = colDef(name = "Community Club", width = 150),
+      date_of_birth = colDef(name = "Date of Birth"),
+      player_height_max = colDef(name = "Player Height", cell = function(cell_value, row_index, column_name) {
+        height <- player_data_table[["player_height_range"]][[row_index]]
+        if(is.na(height)) {
+          if(is.na(cell_value)) {
+            ""
+          } else {
+            paste(cell_value, "cm")
+          }
+        } else {
+          paste(height, "cm")
+        }
+        }),
+      player_weight_max = colDef(name = "Player Weight", cell = function(cell_value, row_index, column_name) {
+        weight <- player_data_table[["player_weight_range"]][[row_index]]
+        if(is.na(weight)) {
+          if(is.na(cell_value)) {
+            ""
+          } else {
+            paste(cell_value, "kg")
+          }
+        } else {
+          paste(weight, "kg")
+        }
+        }),
+      player_image = colDef(show = FALSE),
+      player_url = colDef(show = FALSE),
+      games_played_state_underage = colDef(name = "Games"),
+      fantasy_points_state_underage = colDef(name = "Fantasy Points", format = colFormat(digits = 1)),
+      games_played_interstate_underage = colDef(name = "Games"),
+      fantasy_points_interstate_underage = colDef(name = "Fantasy Points", format = colFormat(digits = 1)),
+      games_played_state_reserves = colDef(name = "Games"),
+      fantasy_points_state_reserves = colDef(name = "Fantasy Points", format = colFormat(digits = 1)),
+      games_played_state_league = colDef(name = "Games"),
+      fantasy_points_state_league = colDef(name = "Fantasy Points", format = colFormat(digits = 1)),
+      phantom_draft_afl = colDef(name = "AFL", cell = phantom_draft_formatter),
+      phantom_draft_sporting_news = colDef(name = "Sporting News", cell = phantom_draft_formatter),
+      phantom_draft_fox_sports = colDef(name = "Fox Sports", cell = phantom_draft_formatter),
+      phantom_draft_abc = colDef(name = "ABC", cell = phantom_draft_formatter)
+    ),
+    columnGroups = list(
+      colGroup(name = "Player Details", columns = c("state", "state_league_club", "community_club", "date_of_birth", "player_height_max", "player_weight_max")),
+      colGroup(name = "Phantom Draft Ranking", columns = c("phantom_draft_afl", "phantom_draft_sporting_news", "phantom_draft_fox_sports", "phantom_draft_abc")),
+      colGroup(name = "State Underage", columns = c("games_played_state_underage", "fantasy_points_state_underage")),
+      colGroup(name = "Interstate Underage", columns = c("games_played_interstate_underage", "fantasy_points_interstate_underage")),
+      colGroup(name = "State Reserves", columns = c("games_played_state_reserves", "fantasy_points_state_reserves")),
+      colGroup(name = "State League", columns = c("games_played_state_league", "fantasy_points_state_league"))
+    ),
+    filterable = TRUE
+  )
+
+```
+
