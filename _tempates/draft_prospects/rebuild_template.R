@@ -44,8 +44,8 @@ try({
   file_delete(dir_ls(male_folder_path))
   file_delete(dir_ls(female_folder_path))
   
-  dir.create(male_folder_path, recursive = TRUE)
-  dir.create(female_folder_path, recursive = TRUE)
+  dir_create("players/afl/underage_profiles", recurse = TRUE)
+  dir_create("players/aflw/underage_profiles", recurse = TRUE)
 
 }, silent = TRUE)
 
@@ -56,8 +56,14 @@ combine_player_details |>
   mutate(
     first_playerId = map_chr(playerIds, head, n = 1)
   ) |>
+  head(1) |> 
 with({
-  pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
+  for(index in seq_along(first_playerId)) {
+    id = first_playerId[index]
+    first_name = player_first_name[index]
+    surname = player_surname[index]
+    gender = gender[index]
+  # pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
     if(gender == "male") {
       folder_path <- male_folder_path
     } else {
@@ -70,7 +76,8 @@ with({
       str_replace_all(fixed("||player_first_name||"), first_name) |>
       str_replace_all(fixed("||player_surname||"), surname) |>
       writeLines(paste0(folder_path, id, ".qmd"))
-  })
+  # })
+  }
 })
 
 try({
