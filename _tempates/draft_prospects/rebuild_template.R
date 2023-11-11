@@ -56,7 +56,6 @@ combine_player_details |>
     first_playerId = map_chr(playerIds, head, n = 1)
   ) |>
   arrange(phantom_draft_afl) |>
-  head(10) |>
 with({
   pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
     if(gender == "male") {
@@ -82,7 +81,5 @@ try({
 print(dir("_freeze/players/afl/", recursive = TRUE, include.dirs = TRUE))
 print(dir("_freeze/players/aflw/", recursive = TRUE, include.dirs = TRUE))
 
-# quarto_render("players/afl/underage_profiles")
-# quarto_render("players/aflw/underage_profiles")
-
-stop("exit")
+quarto_render("players/afl/underage_profiles")
+quarto_render("players/aflw/underage_profiles")
