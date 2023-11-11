@@ -38,13 +38,12 @@ write_parquet(season_data_table, "_tempates/draft_prospects/season_data_table.pa
 write_parquet(match_data_table, "_tempates/draft_prospects/match_data_table.parquet")
 
 
-file_delete(dir_ls(male_folder_path))
-file_delete(dir_ls(female_folder_path))
+file_delete(dir(male_folder_path, full.names = TRUE))
+file_delete(dir(female_folder_path, full.names = TRUE))
 
-suppressWarnings({
-  dir.create(male_folder_path, recursive = TRUE)
-  dir.create(female_folder_path, recursive = TRUE)
-})
+dir_create(male_folder_path, recurse = TRUE)
+dir_create(female_folder_path, recurse = TRUE)
+
 
 print(dir("players/afl/", recursive = TRUE, include.dirs = TRUE))
 print(dir("players/aflw/", recursive = TRUE, include.dirs = TRUE))
@@ -80,4 +79,4 @@ print(dir("_freeze/players/aflw/", recursive = TRUE, include.dirs = TRUE))
 
 # quarto_render("players/afl/underage_profiles")
 # quarto_render("players/aflw/underage_profiles")
-
+stop("exit!")
