@@ -44,14 +44,14 @@ try({
   file_delete(dir_ls(male_folder_path))
   file_delete(dir_ls(female_folder_path))
   
-  dir_create("players/afl/underage_profiles", recurse = TRUE)
-  dir_create("players/aflw/underage_profiles", recurse = TRUE)
+  dir_create(male_folder_path, recurse = TRUE)
+  dir_create(female_folder_path, recurse = TRUE)
 
 }, silent = TRUE)
 
 print(dir("players/afl/", recursive = TRUE, include.dirs = TRUE))
 print(dir("players/aflw/", recursive = TRUE, include.dirs = TRUE))
-  
+
 combine_player_details |>
   mutate(
     first_playerId = map_chr(playerIds, head, n = 1)

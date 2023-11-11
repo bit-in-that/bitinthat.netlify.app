@@ -33,6 +33,11 @@ jobs:
       with:
         cache-version: 1
     
+   - name: Create folders
+      run: |
+        mkdir players/afl/underage_profiles
+        mkdir players/aflw/underage_profiles
+    
     - name: Run Script
       run: |
         source("_tempates/draft_prospects/rebuild_template.R", echo = TRUE)
