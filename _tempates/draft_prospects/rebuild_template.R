@@ -37,42 +37,47 @@ write_parquet(combine_player_details, "_tempates/draft_prospects/combine_player_
 write_parquet(season_data_table, "_tempates/draft_prospects/season_data_table.parquet")
 write_parquet(match_data_table, "_tempates/draft_prospects/match_data_table.parquet")
 
-{
-  file_delete(dir_ls(male_folder_path))
-  file_delete(dir_ls(female_folder_path))
+
+file_delete(dir_ls(male_folder_path))
+file_delete(dir_ls(female_folder_path))
+
+suppressWarnings({
+  dir.create(male_folder_path, recursive = TRUE)
+  dir.create(female_folder_path, recursive = TRUE)
+})
+
+print(dir("players/afl/", recursive = TRUE, include.dirs = TRUE))
+print(dir("players/aflw/", recursive = TRUE, include.dirs = TRUE))
   
-  suppressWarnings({
-    dir.create(male_folder_path, recursive = TRUE)
-    dir.create(female_folder_path, recursive = TRUE)
-  })
-  
-  combine_player_details |> 
-    mutate(
-      first_playerId = map_chr(playerIds, head, n = 1)
-    ) |> 
-    arrange(phantom_draft_afl) |> 
-    head(10) |> 
-  with({
-    pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
-      if(gender == "male") {
-        folder_path <- male_folder_path
-      } else {
-        folder_path <- female_folder_path
-        
-      }
-      
-      quarto_template |> 
-        str_replace_all(fixed("||player_name||"), paste(first_name, surname)) |> 
-        str_replace_all(fixed("||player_first_name||"), first_name) |> 
-        str_replace_all(fixed("||player_surname||"), surname) |> 
-        writeLines(paste0(folder_path, id, ".qmd"))
-    })
-  })
-}
+# combine_player_details |> 
+#   mutate(
+#     first_playerId = map_chr(playerIds, head, n = 1)
+#   ) |> 
+#   arrange(phantom_draft_afl) |> 
+#   head(10) |> 
+# with({
+#   pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
+#     if(gender == "male") {
+#       folder_path <- male_folder_path
+#     } else {
+#       folder_path <- female_folder_path
+#       
+#     }
+#     
+#     quarto_template |> 
+#       str_replace_all(fixed("||player_name||"), paste(first_name, surname)) |> 
+#       str_replace_all(fixed("||player_first_name||"), first_name) |> 
+#       str_replace_all(fixed("||player_surname||"), surname) |> 
+#       writeLines(paste0(folder_path, id, ".qmd"))
+#   })
+# })
 
 dir_delete("_freeze/players/afl/underage_profiles/")
 dir_delete("_freeze/players/aflw/underage_profiles/")
 
-quarto_render("players/afl/underage_profiles")
-quarto_render("players/aflw/underage_profiles")
+print(dir("_freeze/players/afl/", recursive = TRUE, include.dirs = TRUE))
+print(dir("_freeze/players/aflw/", recursive = TRUE, include.dirs = TRUE))
+
+# quarto_render("players/afl/underage_profiles")
+# quarto_render("players/aflw/underage_profiles")
 
