@@ -1,5 +1,5 @@
 ---
-title: "AFL Player Data"
+title: "AFL Draft Prospects"
 freeze: true
 ---
 
