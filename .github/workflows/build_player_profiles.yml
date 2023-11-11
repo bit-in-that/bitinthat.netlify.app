@@ -33,10 +33,10 @@ jobs:
       with:
         cache-version: 1
     
-    - name: Create folders
-      run: |
-        mkdir -e players/afl/underage_profiles
-        mkdir -e players/aflw/underage_profiles
+    # - name: Create folders
+    #   run: |
+    #     mkdir -e players/afl/underage_profiles
+    #     mkdir -e players/aflw/underage_profiles
     
     - name: Run Script
       run: |
