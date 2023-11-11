@@ -1,3 +1,10 @@
+library(fs)
+
+dir.create("players/afl/underage_profiles")
+writeLines(c("hello world"), "players/afl/underage_profiles/CD_I1023492.txt")
+
+if(FALSE) {
+
 library(arrow)
 library(dplyr)
 library(stringr)
@@ -82,3 +89,5 @@ print(dir("_freeze/players/aflw/", recursive = TRUE, include.dirs = TRUE))
 
 quarto_render("players/afl/underage_profiles")
 quarto_render("players/aflw/underage_profiles")
+
+}
