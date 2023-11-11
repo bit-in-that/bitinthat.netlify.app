@@ -35,8 +35,8 @@ jobs:
     
     - name: Create folders
       run: |
-        mkdir players/afl/underage_profiles
-        mkdir players/aflw/underage_profiles
+        mkdir -e players/afl/underage_profiles
+        mkdir -e players/aflw/underage_profiles
     
     - name: Run Script
       run: |
