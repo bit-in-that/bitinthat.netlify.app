@@ -200,7 +200,7 @@ match_data_table |>
     ),
     filterable = TRUE,
     pagination = FALSE,
-    height = 300
+    height = 750
   )
 
 ```
