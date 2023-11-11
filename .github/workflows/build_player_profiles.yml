@@ -6,35 +6,38 @@ on:
 
 
 jobs:
-  build-deploy:
+  build:
     runs-on: ubuntu-latest
-    steps:
-      - name: Install Australian Locale
-        run: |
-          sudo locale-gen en_AU
-          sudo locale-gen en_AU.utf8
-          sudo update-locale 
-        
-      - name: Check out repository
-        uses: actions/checkout@v3 
-
-      - name: Set up Quarto
-        uses: quarto-dev/quarto-actions/setup@v2
-        
-      - name: Install R
-        uses: r-lib/actions/setup-r@v2
-        with:
-          r-version: '4.3.1'
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: Install R Dependencies 
-        uses: r-lib/actions/setup-renv@v2
-        with:
-          cache-version: 1
+    steps:
+    - name: Install Australian Locale
+      run: |
+        sudo locale-gen en_AU
+        sudo locale-gen en_AU.utf8
+        sudo update-locale 
+      
+    - name: Check out repository
+      uses: actions/checkout@v3 
 
-      - name: Run Script
-        run: |
-          source("_tempates/draft_prospects/rebuild_template.R", echo = TRUE)
-        shell: Rscript {0}
+    - name: Set up Quarto
+      uses: quarto-dev/quarto-actions/setup@v2
+      
+    - name: Install R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: '4.3.1'
+    
+    - name: Install R Dependencies 
+      uses: r-lib/actions/setup-renv@v2
+      with:
+        cache-version: 1
+
+    - name: Run Script
+      run: |
+        source("_tempates/draft_prospects/rebuild_template.R", echo = TRUE)
+      shell: Rscript {0}
 
     - name: Commit
       run: |
