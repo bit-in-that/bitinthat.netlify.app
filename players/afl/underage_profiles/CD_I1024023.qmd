@@ -198,7 +198,9 @@ match_data_table |>
       colGroup(name = "Match Info", columns = c("tier", "comp_name", "match_type", "round_abbreviation", "team_name", "opposition_name")),
       colGroup(name = "Average Stats", columns = c("fantasy_points", "goals", "behinds", "kicks", "handballs", "disposals", "marks", "tackles", "hitouts", "frees_for", "frees_against"))
     ),
-    filterable = TRUE
+    filterable = TRUE,
+    pagination = FALSE,
+    height = 300
   )
 
 ```
