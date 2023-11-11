@@ -40,7 +40,8 @@ player_data_table <- combine_player_details |>
     phantom_draft_afl = coalesce(phantom_draft_afl, 999L),
     phantom_draft_sporting_news = coalesce(phantom_draft_sporting_news, 999L),
     phantom_draft_fox_sports = coalesce(phantom_draft_fox_sports, 999L),
-    phantom_draft_abc = coalesce(phantom_draft_abc, 999L)
+    phantom_draft_abc = coalesce(phantom_draft_abc, 999L),
+    player_url = paste0("https://bitinthat.netlify.app/players/afl/underage_profiles/", playerId, ".html")
     ) |> 
   relocate(player_name, .before = "state")
 
