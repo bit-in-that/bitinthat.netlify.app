@@ -1,5 +1,4 @@
 name: Build player profiles
-# Render quarto (including R code execution) and publish site to netlify 
 
 on:
   workflow_dispatch:
