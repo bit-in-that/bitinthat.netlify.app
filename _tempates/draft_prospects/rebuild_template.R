@@ -37,11 +37,12 @@ write_parquet(combine_player_details, "_tempates/draft_prospects/combine_player_
 write_parquet(season_data_table, "_tempates/draft_prospects/season_data_table.parquet")
 write_parquet(match_data_table, "_tempates/draft_prospects/match_data_table.parquet")
 
-
-
 {
   file_delete(dir_ls(male_folder_path))
   file_delete(dir_ls(female_folder_path))
+  
+  dir_create(male_folder_path, recurse = TRUE)
+  dir_create(female_folder_path, recurse = TRUE)
   
   combine_player_details |> 
     mutate(
