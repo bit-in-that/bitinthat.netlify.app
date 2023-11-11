@@ -56,7 +56,6 @@ combine_player_details |>
   mutate(
     first_playerId = map_chr(playerIds, head, n = 1)
   ) |>
-  head(1) |> 
 with({
   for(index in seq_along(first_playerId)) {
     id = first_playerId[index]
