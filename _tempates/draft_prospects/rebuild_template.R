@@ -1,10 +1,3 @@
-library(fs)
-
-dir.create("players/afl/underage_profiles")
-writeLines(c("hello world"), "players/afl/underage_profiles/CD_I1023492.txt")
-
-if(FALSE) {
-
 library(arrow)
 library(dplyr)
 library(stringr)
@@ -13,6 +6,7 @@ library(fs)
 library(quarto)
 
 quarto_template <- readLines("_tempates/draft_prospects/template.qmd")
+
 male_folder_path <- "players/afl/underage_profiles/"
 female_folder_path <- "players/aflw/underage_profiles/"
 
@@ -50,8 +44,8 @@ try({
   file_delete(dir_ls(male_folder_path))
   file_delete(dir_ls(female_folder_path))
   
-  dir_create(male_folder_path, recurse = TRUE)
-  dir_create(female_folder_path, recurse = TRUE)
+  dir.create(male_folder_path, recursive = TRUE)
+  dir.create(female_folder_path, recursive = TRUE)
 
 }, silent = TRUE)
 
@@ -89,5 +83,3 @@ print(dir("_freeze/players/aflw/", recursive = TRUE, include.dirs = TRUE))
 
 quarto_render("players/afl/underage_profiles")
 quarto_render("players/aflw/underage_profiles")
-
-}
