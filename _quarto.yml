@@ -48,6 +48,10 @@ website:
       - text: Fantasy
         icon: magic
         menu:
+          - text: "<b>AFL</b>"
+          - href: "fantasy/afl/top_coaches.qmd"
+            text: "Top Coaches"
+            icon: patch-check
           - text: "<b>AFLW</b>"
           - href: "fantasy/aflw/top_coaches.qmd"
             text: "Top Coaches"
@@ -55,18 +59,20 @@ website:
           - href: "fantasy/aflw/selections.qmd"
             text: "Player Selections"
             icon: eyedropper
-          - text: "<b>AFL</b>"
-          - href: "fantasy/afl/top_coaches.qmd"
-            text: "Top Coaches"
-            icon: patch-check
       - text: Players
         icon: person
         menu:
+          - text: "<b>AFL</b>"
+          - href: "players/afl/draft_prospects.qmd"
+            text: "Draft Prospects"
+            icon: egg
           - text: "<b>AFLW</b>"
           - href: "players/aflw/index.qmd"
             text: "Player Data"
             icon: card-list
-          - text: "<b>AFL</b>"
+          - href: "players/aflw/draft_prospects.qmd"
+            text: "Draft Prospects"
+            icon: egg
     right:
       - icon: github
         href: https://github.com/bit-in-that
