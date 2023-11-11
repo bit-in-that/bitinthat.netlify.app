@@ -55,7 +55,6 @@ combine_player_details |>
   mutate(
     first_playerId = map_chr(playerIds, head, n = 1)
   ) |>
-  arrange(phantom_draft_afl) |>
 with({
   pwalk(list(first_playerId, player_first_name, player_surname, gender), \(id, first_name, surname, gender){
     if(gender == "male") {
