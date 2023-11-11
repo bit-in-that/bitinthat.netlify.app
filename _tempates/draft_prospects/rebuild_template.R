@@ -41,8 +41,10 @@ write_parquet(match_data_table, "_tempates/draft_prospects/match_data_table.parq
   file_delete(dir_ls(male_folder_path))
   file_delete(dir_ls(female_folder_path))
   
-  dir_create(male_folder_path, recurse = TRUE)
-  dir_create(female_folder_path, recurse = TRUE)
+  suppressWarnings({
+    dir.create(male_folder_path, recursive = TRUE)
+    dir.create(female_folder_path, recursive = TRUE)
+  })
   
   combine_player_details |> 
     mutate(
