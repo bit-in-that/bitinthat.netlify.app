@@ -1,6 +1,6 @@
 ---
 title: "AFL Draft Prospects"
-freeze: true
+freeze: false
 ---
 
 ```{r}
