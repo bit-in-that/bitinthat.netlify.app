@@ -43,11 +43,13 @@ You are currently in dark mode.
 
 ```{webr-r}
 webr::install("dplyr")
+library(dplyr)
+
 ```
 
 ```{webr-r}
-library(dplyr)
-print(as_tibble(mtcars))
+player_data <- readRDS(url("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/raw/2023/player_data.RDS"))
+
 
 # player_selections_long <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/player_selections_long.parquet")
 # 
