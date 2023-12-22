@@ -1,8 +1,8 @@
 ---
 title: "bit in that"
 description: "Data analysis for Australian Rules Football."
-filters:
-  - webr
+# filters:
+#   - webr
 ---
 
 
@@ -41,22 +41,15 @@ You are currently in dark mode.
 :::
 
 
-```{webr-r}
-webr::install("dplyr")
-library(dplyr)
+<!-- ```{webr-r} -->
+<!-- webr::install("dplyr") -->
+<!-- library(dplyr) -->
 
-```
+<!-- ``` -->
 
-```{webr-r}
-player_data <- readRDS(url("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/raw/2023/player_data.RDS"))
+<!-- ```{webr-r} -->
+<!-- player_data <- readRDS(url("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/raw/2023/player_data.RDS")) -->
 
-
-# player_selections_long <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/player_selections_long.parquet")
-# 
-# dim(player_selections_long)
-# 
-# fit = lm(mpg ~ am, data = mtcars)
-# summary(fit)
-```
+<!-- ``` -->
 
 
