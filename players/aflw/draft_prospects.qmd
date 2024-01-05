@@ -18,6 +18,24 @@ combine_player_details <- read_parquet("https://github.com/bit-in-that/data-auto
 
 ```
 
+::: {.callout-caution}
+
+### Individual Profiles Down
+
+The links to individual player profiles currently do not work due. They will be restored when some technical issues have been resolved.
+
+:::
+
+
+::: {.callout-warning}
+
+### Data Disclaimer
+
+Note that data for the interstate underage competition ("AFL U18 Championships") are missing behind and free kick data, as such these items are omitted from the calculation of fantasy points.
+
+:::
+
+
 
 ```{r}
 phantom_draft_formatter <- function(cell_value, row_index, column_name) {

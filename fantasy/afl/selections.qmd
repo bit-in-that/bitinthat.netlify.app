@@ -1,5 +1,5 @@
 ---
-title: "AFL Fantasy Player Selection Plots"
+title: "AFL Fantasy Player Selections"
 execute:
   echo: false
   warning: false
@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function() {
   // Create a URLSearchParams instance from the current URL's query string
   const queryParams = new URLSearchParams(window.location.search);
   // Get the 'playerId' query parameter
-  const playerId = queryParams.get('playerId');
+  const playerId = queryParams.get('playerid');
 
   if(playerId) {
   
