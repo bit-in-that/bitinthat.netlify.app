@@ -7,6 +7,9 @@ project:
   type: website
   output-dir: _site
   
+  resources:
+    - "fantasy/afl/json_data/**"
+  
   preview: 
     port: 22222
     browser: true
@@ -52,6 +55,9 @@ website:
           - href: "fantasy/afl/top_coaches.qmd"
             text: "Top Coaches"
             icon: patch-check
+          - href: "fantasy/afl/selections.qmd"
+            text: "Player Selections"
+            icon: eyedropper
           - text: "<b>AFLW</b>"
           - href: "fantasy/aflw/top_coaches.qmd"
             text: "Top Coaches"

@@ -1,0 +1,187 @@
+---
+title: "AFL Fantasy Player Selection Plots"
+execute:
+  echo: false
+  warning: false
+---
+
+
+```{r}
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(htmltools)
+library(purrr)
+
+```
+
+
+```{r}
+update_plotly_legend_labels <- function(plotly_object, legend_labels) {
+  plotly_list <- plotly_build(plotly_object)
+  
+  # Throw an error if the names of the series don't match up
+  stopifnot(length(plotly_list$x$data) == length(legend_labels))
+  
+  for(index in seq_along(legend_labels)) {
+    plotly_list$x$data[[index]]$name <- legend_labels[[index]]
+  }
+  
+  plotly_build(plotly_list)
+}
+
+player_selections_plot <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/player_selections_long.parquet") |> 
+    mutate(
+      direction = if_else(owned_by_adjusted_diff>0, "Daily Increase", "Daily Decrease"),
+      snapshot_label = "Snapshot"
+    ) |> 
+    mutate(
+    snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney"),
+    full_name = paste(first_name, last_name)
+  )
+
+
+player_id_list <- player_selections_plot |>
+  distinct(id, .keep_all = TRUE) |>
+  with({
+    `names<-`(id, full_name)
+  })
+
+
+```
+
+<!-- TODO: Make the plot able to swap out the metric (adjusted versus official ownership) as well as the player. Or alternatively two sperate plots might be simpler. -->
+
+
+```{r}
+player_selections_plot |>
+  distinct(id, .keep_all = TRUE) |>
+  transmute(
+    id,
+    full_name = paste(first_name, last_name)
+  ) |> 
+  with({
+    map2(id, full_name, ~{
+      tags$option(value = .x, .y)
+    })
+  }) |> 
+  c(id = "player-select") |> 
+  do.call(what = tags$select) |> 
+  div(id = "select-container")
+
+
+```
+
+
+
+
+```{r}
+gg <- player_selections_plot |>
+  filter(
+    id == player_selections_plot$id[[1]]
+  ) |> 
+  ggplot(aes(x = snapshot_date, y = owned_by_adjusted)) +
+  geom_col(aes(y = owned_by_adjusted_diff, fill = direction)) +
+  geom_point(aes(y = owned_by_adjusted_diff, colour = direction)) +
+  geom_line(aes(colour = "Snapshot")) +
+  geom_point(aes(colour = "Snapshot")) +
+  xlab("Snapshot Date") +
+  ylab("Owned by % (adjusted)") +
+  scale_colour_manual(
+    name = "Legend",
+    values = c("Snapshot" = "#333333", "Daily Increase" = "#017720", "Daily Decrease" = "#AA0000")
+  ) +
+  scale_fill_manual(
+    name = "",
+    values = c("Daily Increase" = "green", "Daily Decrease" = "red")
+  ) +
+  # labs(title = "Player Name (Team), $000k (position)") + # add this later
+  labs(title = player_selections_plot$full_name[1]) + # add this later
+  theme_minimal()
+  
+p <- ggplotly(gg) |> 
+  # This was bit of a hack but it works!
+  update_plotly_legend_labels(c("Daily Decrease", "Daily Increase", "Daily Decrease", "Daily Increase", "Snapshot"))
+
+p$elementId <- "plotly_plot"
+
+p
+```
+
+
+
+```{=html}
+
+<!-- Linking Selectize CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" rel="stylesheet" />
+
+
+<!-- JavaScript to Initialize Selectize -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
+<script>
+
+//var selectedDataset = document.getElementById('player-select').value;
+
+update_plotly_plot = function(player_id) {
+  if(!(player_id == '')) {
+  
+  fetch("json_data/owned_by_adjusted_plot_data.json")
+    .then(response => response.json())
+    .then(data => {
+      // Convert the data to the format Plotly expects
+      data_player = data[player_id];
+      //console.log(data_player);
+      Plotly.restyle('plotly_plot', 'x', [data_player['daily_decrease_x']], [0,2]);
+      Plotly.restyle('plotly_plot', 'y', [data_player['daily_decrease_y_abs']], [0]);
+      Plotly.restyle('plotly_plot', 'base', [data_player['daily_decrease_y']], [0]);
+      Plotly.restyle('plotly_plot', 'y', [data_player['daily_decrease_y']], [2]);
+      Plotly.restyle('plotly_plot', 'text', [data_player['daily_decrease_text']], [0,2]);
+      Plotly.restyle('plotly_plot', 'x', [data_player['daily_increase_x']], [1,3]);
+      Plotly.restyle('plotly_plot', 'y', [data_player['daily_increase_y']], [1,3]);
+      Plotly.restyle('plotly_plot', 'text', [data_player['daily_increase_text']], [1,3]);
+      Plotly.restyle('plotly_plot', 'x', [data_player['snapshot_x']], [4]);
+      Plotly.restyle('plotly_plot', 'y', [data_player['snapshot_y']], [4]);
+      Plotly.restyle('plotly_plot', 'text', [data_player['snapshot_text']], [4]);
+      
+      Plotly.relayout('plotly_plot', {
+        'title': data_player['full_name'][0],
+        'xaxis.autorange': true,
+        'yaxis.autorange': true,
+        'yaxis.dtick': data_player['tick_interval'][0]
+        
+      });
+      
+      //console.log(document.getElementById('plotly_plot').data);
+  
+    });
+    }
+      
+
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Create a URLSearchParams instance from the current URL's query string
+  const queryParams = new URLSearchParams(window.location.search);
+  // Get the 'playerId' query parameter
+  const playerId = queryParams.get('playerId');
+
+  if(playerId) {
+  
+    update_plotly_plot(playerId);
+  };
+  
+
+  $('#player-select').selectize({
+    // options and callbacks here
+    onChange: function(value){
+      // console.log(value);
+      update_plotly_plot(value);
+    }
+    });
+  });
+</script>
+
+
+```
+
