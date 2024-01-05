@@ -33,6 +33,14 @@ phantom_draft_formatter <- function(cell_value, row_index, column_name) {
   }
 ```
 
+::: {.callout-caution}
+
+### Individual Profiles Down
+
+The links to individual player profiles currently do not work due. They will be restored when some technical issues have been resolved.
+
+:::
+
 ::: {.callout-warning}
 
 ### Data Disclaimer
