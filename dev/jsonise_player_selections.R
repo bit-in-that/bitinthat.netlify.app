@@ -11,7 +11,7 @@ player_selections_modified <- player_selections_long |>
   mutate(
     direction = if_else(owned_by_adjusted_diff > 0, "Daily Increase", "Daily Decrease"),
     full_name = paste(first_name, last_name),
-    snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney"),
+    snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney") - 1,
     snapshot_date_int = as.integer(snapshot_date),
     text_snapshot = paste0("Snapshot Date: ", format(snapshot_date, format = "%Y-%m-%d"), "<br />Owned By  % (Adjusted): ", round(owned_by_adjusted, 2), "<br />Owned By  % (Official): ", round(owned_by, 2), "<br /># Coaches: ", fantasy_coaches, "(", round(100*completion_percentage, 1), "% complete)"),
     text_daily_change = paste0("Snapshot Date: ", format(snapshot_date, format = "%Y-%m-%d"), "<br />Daily Movement In Adjusted Ownership: ", round(owned_by_adjusted_diff, 2), "<br /># Coaches: ", fantasy_coaches, " (", round(100*completion_percentage, 1), "% complete)"),
