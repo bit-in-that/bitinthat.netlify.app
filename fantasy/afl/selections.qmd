@@ -144,7 +144,7 @@ player_selections_table |>
   reactable(
     columns = list(
       id = colDef(show = FALSE),
-      full_name = colDef(name = "Player", cell = \(cell_value, row_index) {
+      full_name = colDef(name = "Player", sticky = "left", cell = \(cell_value, row_index) {
         id <- player_selections_table$id[[row_index]]
         tags$a(cell_value, href = paste0("https://bitinthat.netlify.app/fantasy/afl/selections?playerid=", id, "#plot"))
       }),
