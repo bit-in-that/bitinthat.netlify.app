@@ -13,9 +13,12 @@ library(ggplot2)
 library(plotly)
 library(htmltools)
 library(purrr)
+library(reactable)
 
 ```
 
+
+## Plot
 
 ```{r}
 update_plotly_legend_labels <- function(plotly_object, legend_labels) {
@@ -37,7 +40,7 @@ player_selections_plot <- read_parquet("https://github.com/bit-in-that/data-auto
       snapshot_label = "Snapshot"
     ) |> 
     mutate(
-    snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney"),
+    snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney") - 1,
     full_name = paste(first_name, last_name)
   )
 
@@ -74,8 +77,6 @@ player_selections_plot |>
 ```
 
 
-
-
 ```{r}
 gg <- player_selections_plot |>
   filter(
@@ -86,7 +87,7 @@ gg <- player_selections_plot |>
   geom_point(aes(y = owned_by_adjusted_diff, colour = direction)) +
   geom_line(aes(colour = "Snapshot")) +
   geom_point(aes(colour = "Snapshot")) +
-  xlab("Snapshot Date") +
+  xlab("Snapshot Date (End of Day)") +
   ylab("Owned by % (adjusted)") +
   scale_colour_manual(
     name = "Legend",
@@ -108,6 +109,85 @@ p$elementId <- "plotly_plot"
 
 p
 ```
+
+
+## Table
+
+```{r}
+
+player_selections_table <- player_selections_plot |> 
+  group_by(
+    id, full_name
+  ) |> 
+  summarise(
+    owned_by = tail(owned_by, 1),
+    owned_by_adjusted = tail(owned_by_adjusted, 1),
+    owned_by_max = max(owned_by),
+    owned_by_adjusted_max = max(owned_by_adjusted),
+    owned_by_adjusted_which_max = which.max(owned_by_adjusted),
+    owned_by_adjusted_max_date = snapshot_date[owned_by_adjusted_which_max],
+    change_yesterday = tail(owned_by_adjusted_diff, 1),
+    change_week = sum(tail(owned_by_adjusted_diff, 7)),
+    change_which_max = which.max(abs(tail(owned_by_adjusted_diff, -2)))[1] + 2,
+    change_max = owned_by_adjusted_diff[change_which_max],
+    change_max_date = snapshot_date[change_which_max],
+    gradient = mean(tail(owned_by_adjusted_diff,-2)),
+    .groups = "drop"
+  ) |> 
+  select(-change_which_max, -owned_by_adjusted_which_max)
+
+player_selections_table |> 
+  reactable(
+    columns = list(
+      id = colDef(show = FALSE),
+      full_name = colDef(name = "Player", cell = \(cell_value, row_index) {
+        id <- player_selections_table$id[[row_index]]
+        tags$a(cell_value, href = paste0("https://bitinthat.netlify.app/fantasy/afl/selections?playerid=", id, "#plot"))
+      }),
+      owned_by = colDef(name = "Official"),
+      owned_by_adjusted = colDef(name = "Adjusted"),
+      owned_by_max = colDef(name = "Official"),
+      owned_by_adjusted_max = colDef(name = "Adjusted"),
+      owned_by_adjusted_max_date = colDef(name = "Date"),
+      change_yesterday = colDef(name = "Yesterday", format = colFormat(digits = 2)),
+      change_week = colDef(name = "Past Week", format = colFormat(digits = 2)),
+      change_max = colDef(name = "Peak Day", format = colFormat(digits = 2)),
+      change_max_date = colDef(name = "Date"),
+      gradient = colDef(name = "Gradient", format = colFormat(digits = 5))
+    ),
+    columnGroups = list(
+      colGroup(name = "Current Ownership", columns = c("owned_by", "owned_by_adjusted")),
+      colGroup(name = "Peak Ownership", columns = c("owned_by_max", "owned_by_adjusted_max", "owned_by_adjusted_max_date")),
+      colGroup(name = "Change Adjusted in Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date"))
+    ),
+    filterable = TRUE
+  )
+
+
+
+
+```
+
+
+## Explanation
+
+When people look at the ownership percentages for AFL fantasy, they often wonder why the most selected players are all below 70%. The reason for this is that a lot of teams are either missing players or are entirely empty. Fortunately there is a solution to this, I have devised the following formula to calculate a player's true selected number:
+
+$$
+(\text{Adjusted \% Selected By}) = (\text{Overall Team Completion \%}) * (\text{\% Selected By})
+$$
+
+where:
+
+$$
+(\text{Overall Team Completion \%}) = \frac{ \sum (\text{\# Selections})}{  30 \times (\text{\# Coaches}) }
+$$
+
+
+This is a rough approximation but it leads to the most selected player (Harley Reid) being close to 100% at this stage.
+
+
+
 
 
 
