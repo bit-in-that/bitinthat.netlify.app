@@ -113,6 +113,9 @@ p
 
 ## Table
 
+<!-- Add a table in another table of people signed up and completed teams, could also be a plot maybe with two shaded regions -->
+
+
 ```{r}
 
 player_selections_table <- player_selections_plot |> 
@@ -120,12 +123,12 @@ player_selections_table <- player_selections_plot |>
     id, full_name
   ) |> 
   summarise(
-    owned_by = tail(owned_by, 1),
-    owned_by_adjusted = tail(owned_by_adjusted, 1),
     owned_by_max = max(owned_by),
     owned_by_adjusted_max = max(owned_by_adjusted),
     owned_by_adjusted_which_max = which.max(owned_by_adjusted),
     owned_by_adjusted_max_date = snapshot_date[owned_by_adjusted_which_max],
+    owned_by = tail(owned_by, 1),
+    owned_by_adjusted = tail(owned_by_adjusted, 1),
     change_yesterday = tail(owned_by_adjusted_diff, 1),
     change_week = sum(tail(owned_by_adjusted_diff, 7)),
     change_which_max = which.max(abs(tail(owned_by_adjusted_diff, -2)))[1] + 2,
@@ -134,7 +137,8 @@ player_selections_table <- player_selections_plot |>
     gradient = mean(tail(owned_by_adjusted_diff,-2)),
     .groups = "drop"
   ) |> 
-  select(-change_which_max, -owned_by_adjusted_which_max)
+  select(-change_which_max, -owned_by_adjusted_which_max) |> 
+  relocate(owned_by, owned_by_adjusted, .after = "full_name")
 
 player_selections_table |> 
   reactable(
@@ -158,7 +162,7 @@ player_selections_table |>
     columnGroups = list(
       colGroup(name = "Current Ownership", columns = c("owned_by", "owned_by_adjusted")),
       colGroup(name = "Peak Ownership", columns = c("owned_by_max", "owned_by_adjusted_max", "owned_by_adjusted_max_date")),
-      colGroup(name = "Change Adjusted in Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date"))
+      colGroup(name = "Change in Adjusted Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date"))
     ),
     filterable = TRUE
   )
