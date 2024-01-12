@@ -146,7 +146,7 @@ player_selections_table |>
       id = colDef(show = FALSE),
       full_name = colDef(name = "Player", sticky = "left", cell = \(cell_value, row_index) {
         id <- player_selections_table$id[[row_index]]
-        tags$a(cell_value, href = paste0("https://bitinthat.netlify.app/fantasy/afl/selections?playerid=", id, "#plot"))
+        tags$a(cell_value, href = paste0("?playerid=", id, "#plot"))
       }),
       owned_by = colDef(name = "Official"),
       owned_by_adjusted = colDef(name = "Adjusted"),
