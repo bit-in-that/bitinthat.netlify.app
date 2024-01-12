@@ -19,7 +19,7 @@ linked_icons <- use("../../modules/linked_icons.R")
 content_creators_ranks <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/content_creators_ranks.parquet") |> 
 mutate(
     img_url = paste0("https://fantasy.afl.com.au/assets/media/avatars/afl/", user_id, ".png"),
-    fantasy_url = paste0("https://fantasy.afl.com.au/classic/team/user/", team_id_2023)
+    fantasy_url = if_else(is.na(team_id), NA_character_, paste0("https://fantasy.afl.com.au/classic/team/user/", team_id))
   ) |> 
   select("team_name", "rank_2022", "rank_2023", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
   arrange(rank_2023)
@@ -27,7 +27,7 @@ mutate(
 overall_ranks_combined_2022_2023 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/overall_ranks_combined_2022_2023.parquet") |> 
   mutate(
     img_url = paste0("https://fantasy.afl.com.au/assets/media/avatars/afl/", user_id, ".png"),
-    fantasy_url = paste0("https://fantasy.afl.com.au/classic/team/user/", team_id),
+    fantasy_url = if_else(is.na(team_id), NA_character_, paste0("https://fantasy.afl.com.au/classic/team/user/", team_id)),
     is_content_creator = user_id %in% content_creators_ranks$user_id
   ) |> 
   select(team_name, is_content_creator, rank_2022, rank_2023, img_url, fantasy_url)
@@ -50,13 +50,21 @@ reactable_b2b <- function(upper_bound) {
           cell = function(cell_value, row_index, column_name) {
             img_url <- ranks_data[["img_url"]][[row_index]]
             fantasy_url <- ranks_data[["fantasy_url"]][[row_index]]
-            tags$a(
-              tags$img(src = img_url, style = "height: 24px;width: 24px;"),
-              " ",
-              cell_value,
-              href = fantasy_url, 
-              target = "_blank"
+            if(is.na(img_url)) {
+              tags$div(
+                tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+                " ",
+                cell_value
               )
+            } else{
+              tags$a(
+                tags$img(src = img_url, style = "height: 24px;width: 24px;"),
+                " ",
+                cell_value,
+                href = fantasy_url, 
+                target = "_blank"
+                )              
+            }
           },
           width = 200
         ),
@@ -151,14 +159,22 @@ content_creators_ranks |>
         cell = function(cell_value, row_index, column_name) {
           img_url <- content_creators_ranks[["img_url"]][[row_index]]
           fantasy_url <- content_creators_ranks[["fantasy_url"]][[row_index]]
-          tags$a(
-            tags$img(src = img_url, style = "height: 24px;width: 24px;"),
-            " ",
-            cell_value,
-            href = fantasy_url, 
-            target = "_blank"
-            )
-        },
+          if(is.na(img_url)) {
+            tags$div(
+              tags$img(src = img_url, style = "height:24px; width: 24px;"),
+              " ",
+              cell_value
+              )
+            } else{
+              tags$a(
+                tags$img(src = img_url, style = "height: 24px; width:24px;"),
+                " ",
+                cell_value,
+                href = fantasy_url, 
+                target = "_blank"
+              )
+            }
+          },
         width = 175
       ),
       name = colDef(
