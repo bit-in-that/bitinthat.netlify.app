@@ -187,7 +187,7 @@ player_selections_table |>
 When people look at the ownership percentages for AFL fantasy, they often wonder why the most selected players are all below 70%. The reason for this is that a lot of teams are either missing players or are entirely empty. Fortunately there is a solution to this, I have devised the following formula to calculate a player's true selected number:
 
 $$
-(\text{Adjusted \% Selected By}) = (\text{Overall Team Completion \%}) * (\text{\% Selected By})
+(\text{Adjusted \% Selected By}) = \frac{(\text{\% Selected By}) } { (\text{Overall Team Completion \%}) }
 $$
 
 where:
