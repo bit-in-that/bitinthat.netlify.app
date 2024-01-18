@@ -133,15 +133,20 @@ player_selections_table <- player_selections_plot |>
     owned_by_adjusted_now = tail(owned_by_adjusted, 1),
     change_yesterday = tail(owned_by_adjusted_diff, 1),
     change_week = sum(tail(owned_by_adjusted_diff, 7)),
-    change_which_max = which.max(abs(tail(owned_by_adjusted_diff, -1)))[1] + 2,
+    change_which_max = which.max(abs(tail(owned_by_adjusted_diff, -1)))[1] + 1,
     change_max = owned_by_adjusted_diff[change_which_max],
     change_max_date = snapshot_date[change_which_max],
     percent_change_yesterday = owned_by_adjusted[n()]/owned_by_adjusted[n() - 1] - 1,
     percent_change_week = owned_by_adjusted[n()]/owned_by_adjusted[n() - 6] - 1,
+    selections_adjusted_diff_yesterday = tail(selections_adjusted_diff, 1),
+    selections_adjusted_diff_week = sum(tail(selections_adjusted_diff, 7)),
+    selections_adjusted_diff_which_max = which.max(tail(selections_adjusted_diff,-1)) + 1,
+    selections_adjusted_diff_max = selections_adjusted_diff[selections_adjusted_diff_which_max],
+    selections_adjusted_diff_max_date = snapshot_date[selections_adjusted_diff_which_max],
     gradient = mean(tail(owned_by_adjusted_diff, -1)),
     .groups = "drop"
   ) |> 
-  select(-change_which_max, -owned_by_adjusted_which_max) |> 
+  select(-change_which_max, -owned_by_adjusted_which_max, -selections_adjusted_diff_which_max) |> 
   relocate(owned_by, owned_by_adjusted_now, .after = "full_name") |> 
   arrange(desc(owned_by))
 
@@ -158,20 +163,25 @@ player_selections_table |>
       owned_by_adjusted_now = colDef(name = "Adjusted"),
       owned_by_max = colDef(name = "Official"),
       owned_by_adjusted_max = colDef(name = "Adjusted"),
-      owned_by_adjusted_max_date = colDef(name = "Date"),
+      owned_by_adjusted_max_date = colDef(name = "Date", format = colFormat(date = TRUE)),
       change_yesterday = colDef(name = "Yesterday", format = colFormat(digits = 2)),
       change_week = colDef(name = "Past Week", format = colFormat(digits = 2)),
       change_max = colDef(name = "Peak Day", format = colFormat(digits = 2)),
-      change_max_date = colDef(name = "Date"),
+      change_max_date = colDef(name = "Date", format = colFormat(date = TRUE)),
       percent_change_yesterday = colDef(name = "Yesterday", format = colFormat(percent = TRUE, digits = 2)),
       percent_change_week = colDef(name = "Past Week", format = colFormat(percent = TRUE, digits = 2)),
+      selections_adjusted_diff_yesterday = colDef("Yesterday", format = colFormat(separators = TRUE)),
+      selections_adjusted_diff_week = colDef("Week", format = colFormat(separators = TRUE)),
+      selections_adjusted_diff_max = colDef("Peak", format = colFormat(separators = TRUE)),
+      selections_adjusted_diff_max_date = colDef("Date", format = colFormat(date = TRUE)),
       gradient = colDef(name = "Gradient", format = colFormat(digits = 5))
     ),
     columnGroups = list(
       colGroup(name = "Current Ownership", columns = c("owned_by", "owned_by_adjusted_now")),
       colGroup(name = "Peak Ownership", columns = c("owned_by_max", "owned_by_adjusted_max", "owned_by_adjusted_max_date")),
       colGroup(name = "Change in Adjusted Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date")),
-      colGroup(name = "% Change", columns = c("percent_change_yesterday", "percent_change_week"))
+      colGroup(name = "% Change", columns = c("percent_change_yesterday", "percent_change_week")),
+      colGroup(name = "Change in Absolute Selections (Adjusted)", columns = c("selections_adjusted_diff_yesterday", "selections_adjusted_diff_week", "selections_adjusted_diff_max", "selections_adjusted_diff_max_date"))
     ),
     filterable = TRUE
   )
