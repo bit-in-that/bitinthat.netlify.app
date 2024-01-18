@@ -133,12 +133,12 @@ player_selections_table <- player_selections_plot |>
     owned_by_adjusted_now = tail(owned_by_adjusted, 1),
     change_yesterday = tail(owned_by_adjusted_diff, 1),
     change_week = sum(tail(owned_by_adjusted_diff, 7)),
-    change_which_max = which.max(abs(tail(owned_by_adjusted_diff, -2)))[1] + 2,
+    change_which_max = which.max(abs(tail(owned_by_adjusted_diff, -1)))[1] + 2,
     change_max = owned_by_adjusted_diff[change_which_max],
     change_max_date = snapshot_date[change_which_max],
     percent_change_yesterday = owned_by_adjusted[n()]/owned_by_adjusted[n() - 1] - 1,
     percent_change_week = owned_by_adjusted[n()]/owned_by_adjusted[n() - 6] - 1,
-    gradient = mean(tail(owned_by_adjusted_diff,-2)),
+    gradient = mean(tail(owned_by_adjusted_diff, -1)),
     .groups = "drop"
   ) |> 
   select(-change_which_max, -owned_by_adjusted_which_max) |> 
