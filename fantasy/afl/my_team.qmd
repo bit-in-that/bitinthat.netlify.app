@@ -1,0 +1,28 @@
+---
+title: "My Team"
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+library(reactable)
+library(dplyr)
+
+# TODO: need to have a json with all the player data to be swapped seamlessly in and out of the reactable
+# js code to get the team
+# input box + button for (press enter to submit) entering session id
+
+# use local storage to save session id: https://www.w3schools.com/jsref/prop_win_localstorage.asp
+# way of saving versions of teams 
+# save everything in local storage
+# does it save it on your mobile as well?
+
+# add a redirects file so that when you navigate to a page with queries it automatically submits a query
+# https://quarto.org/docs/websites/website-navigation.html#redirects
+# https://docs.netlify.com/routing/redirects/
+
+```
+
+
+
