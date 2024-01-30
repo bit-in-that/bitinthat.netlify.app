@@ -9,6 +9,8 @@ project:
   
   resources:
     - "fantasy/afl/json_data/**"
+    - "netlify.toml"
+    - "_redirects"
   
   preview: 
     port: 22222

@@ -1,4 +1,4 @@
-name: Build player profiles
+name: Update ownership jsons
 
 on:
   workflow_dispatch: 
