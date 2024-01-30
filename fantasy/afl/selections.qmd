@@ -5,8 +5,16 @@ execute:
   warning: false
 ---
 
+<!-- TODO:
+Add the selections, the % of coaches who pick players as C or VC, bench, emergency etc.
+Add a plotly for number of coaches, completion % etc. 
+during the season adding up trades in and out to see how many people are actively playing
+-->
+
+
 
 ```{r}
+
 library(arrow)
 library(dplyr)
 library(ggplot2)
