@@ -123,6 +123,10 @@ p
 
 <!-- Add a table in another table of people signed up and completed teams, could also be a plot maybe with two shaded regions -->
 
+::: {.panel-tabset}
+
+### Players
+
 
 ```{r}
 player_selections_table <- player_selections_plot |> 
@@ -198,6 +202,46 @@ player_selections_table |>
 
 
 ```
+
+### Fantasy Coaches
+
+```{r}
+
+player_selections_plot |> 
+  group_by(snapshot_date) |> 
+  summarise(
+    fantasy_coaches = head(fantasy_coaches, 1),
+    fantasy_coaches_diff = head(fantasy_coaches_diff, 1),
+    completion_percentage = head(completion_percentage, 1),
+    sum_trades = round(sum(abs(selections_adjusted_diff))/2, 0),
+    .groups = "drop"
+  ) |>
+  mutate(
+    turnover = round(sum_trades / lag(fantasy_coaches), 3)
+  ) |> 
+  arrange(desc(snapshot_date)) |> 
+  reactable(
+    columns = list(
+      snapshot_date = colDef(name  = "Date"),
+      fantasy_coaches = colDef(name  = "Count", format = colFormat(separators = TRUE)),
+      fantasy_coaches_diff = colDef(name  = "Increase", format = colFormat(separators = TRUE)),
+      completion_percentage = colDef(name = "Completion", format = colFormat(percent = TRUE, digits = 1)),
+      sum_trades = colDef(name = "Count", format = colFormat(separators = TRUE)),
+      turnover = colDef(name = "Turnover", format = colFormat(percent = TRUE, digits = 1))
+    ),
+    columnGroups = list(
+      colGroup(name = "Fantasy Coaches", columns = c("fantasy_coaches", "fantasy_coaches_diff")),
+      colGroup(name = "Turnover", columns = c("sum_trades", "turnover"))
+    ),
+    filterable = TRUE
+  )
+
+
+```
+
+
+
+:::
 
 
 ## Explanation
