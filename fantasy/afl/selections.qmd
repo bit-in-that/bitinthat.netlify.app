@@ -22,6 +22,7 @@ library(plotly)
 library(htmltools)
 library(purrr)
 library(reactable)
+library(tidyr)
 
 ```
 
@@ -58,7 +59,6 @@ player_id_list <- player_selections_plot |>
   with({
     `names<-`(id, full_name)
   })
-
 
 ```
 
@@ -119,13 +119,30 @@ p
 ```
 
 
+
+```{r}
+player_selections_plot
+
+player_selections_plot |>
+  pivot_longer()
+
+player_selections_plot |> 
+  filter(
+    id == player_selections_plot$id[[1]]
+  ) |> 
+  ggplot(aes(x = snapshot_date, y = selections_captain)) +
+  geom_col()
+
+```
+
+
 ## Table
 
 <!-- Add a table in another table of people signed up and completed teams, could also be a plot maybe with two shaded regions -->
 
 ::: {.panel-tabset}
 
-### Players
+### Player Selections
 
 
 ```{r}
