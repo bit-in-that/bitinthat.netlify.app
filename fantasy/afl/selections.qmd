@@ -22,6 +22,8 @@ library(plotly)
 library(htmltools)
 library(purrr)
 library(reactable)
+library(tidyr)
+library(stringr)
 
 ```
 
@@ -59,7 +61,6 @@ player_id_list <- player_selections_plot |>
     `names<-`(id, full_name)
   })
 
-
 ```
 
 <!-- TODO: Make the plot able to swap out the metric (adjusted versus official ownership) as well as the player. Or alternatively two sperate plots might be simpler. -->
@@ -84,9 +85,13 @@ player_selections_plot |>
 
 ```
 
+::: {.panel-tabset}
+
+### Change in Ownership (Adjusted)
+
 
 ```{r}
-gg <- player_selections_plot |>
+gg_ownership <- player_selections_plot |>
   filter(
     id == player_selections_plot$id[[1]]
   ) |> 
@@ -96,7 +101,7 @@ gg <- player_selections_plot |>
   geom_line(aes(colour = "Snapshot")) +
   geom_point(aes(colour = "Snapshot")) +
   xlab("Snapshot Date (End of Day)") +
-  ylab("Owned by % (adjusted)") +
+  ylab("Owned by % (Adjusted)") +
   scale_colour_manual(
     name = "Legend",
     values = c("Snapshot" = "#333333", "Daily Increase" = "#017720", "Daily Decrease" = "#AA0000")
@@ -109,19 +114,101 @@ gg <- player_selections_plot |>
   labs(title = player_selections_plot$full_name[1]) + # add this later
   theme_minimal()
   
-p <- ggplotly(gg) |> 
+p_ownership <- ggplotly(gg_ownership) |> 
   # This was bit of a hack but it works!
   update_plotly_legend_labels(c("Daily Decrease", "Daily Increase", "Daily Decrease", "Daily Increase", "Snapshot"))
 
-p$elementId <- "plotly_plot"
+p_ownership$elementId <- "plotly_plot_ownership"
 
-p
+p_ownership
 ```
 
+
+
+```{r}
+player_selections_role <- player_selections_plot |> 
+  select(id, snapshot_date, full_name, owned_by_adjusted, selections_captain_adjusted:selections_any_captain_if_owned) |> 
+  pivot_longer(cols = owned_by_adjusted:selections_any_captain_if_owned, names_to = "statistic") |> 
+  mutate(
+    adjusted_version = str_detect(statistic, "_adjusted$"),
+    Role = statistic |> 
+      str_remove("^selections_") |> 
+      str_replace_all("_", " ") |> 
+      str_replace("if owned", "(if owned)") |> 
+      str_replace("if bench", "(if bench)") |> 
+      str_replace("adjusted", "(adjusted)") |> 
+      str_to_title()
+    )
+
+
+```
+
+### Role (Adjusted)
+
+
+```{r}
+gg_role_adjusted <- player_selections_role |> 
+  filter(
+    id == player_selections_plot$id[[1]],
+    adjusted_version
+  ) |> 
+  ggplot(aes(x = snapshot_date, y = value, colour = Role)) +
+  geom_line() + 
+  geom_point() +
+  xlab("Snapshot Date (End of Day)") +
+  ylab("Usage in Role % (adjusted)") +
+  scale_color_manual(
+    breaks=c("Owned By (Adjusted)", "Any Captain (Adjusted)", "Captain (Adjusted)", "Vice Captain (Adjusted)", "Bench (Adjusted)", "Emergency (Adjusted)"),
+    values = c("Owned By (Adjusted)" = "#333333", "Any Captain (Adjusted)" = "#F50743", "Captain (Adjusted)" = "#F5A623", "Vice Captain (Adjusted)" = "#198DE1", "Bench (Adjusted)" = "#82F524", "Emergency (Adjusted)" = "#B55DAE")
+    ) +
+  labs(title = player_selections_plot$full_name[1]) + # add this later
+  theme_minimal()
+
+p_role_adjusted <- ggplotly(gg_role_adjusted)
+
+p_role_adjusted$elementId <- "plotly_plot_role_adjusted"
+
+p_role_adjusted
+
+```
+
+
+### Role (If Owned)
+
+```{r}
+gg_role_if_owned <- player_selections_role |> 
+  filter(
+    id == player_selections_plot$id[[1]],
+    !adjusted_version
+  ) |> 
+  ggplot(aes(x = snapshot_date, y = value, colour = Role)) +
+  geom_line() + 
+  geom_point() +
+  xlab("Snapshot Date (End of Day)") +
+  ylab("Usage in Role %") + 
+  scale_color_manual(
+    breaks=c("Owned By (If Owned)", "Any Captain (If Owned)", "Captain (If Owned)", "Vice Captain (If Owned)", "Bench (If Owned)", "Emergency (If Owned)", "Emergency (If Bench)"),
+    values = c("Owned By (If Owned)" = "#333333", "Any Captain (If Owned)" = "#F50743", "Captain (If Owned)" = "#F5A623", "Vice Captain (If Owned)" = "#198DE1", "Bench (If Owned)" = "#82F524", "Emergency (If Owned)" = "#B55DAE", "Emergency (If Bench)" = "#592E56")
+    ) +
+  labs(title = player_selections_plot$full_name[1]) + # add this later
+  theme_minimal()
+
+p_role_if_owned <- ggplotly(gg_role_if_owned)
+
+p_role_if_owned$elementId <- "plotly_plot_role_if_owned"
+
+p_role_if_owned
+```
+
+:::
 
 ## Table
 
 <!-- Add a table in another table of people signed up and completed teams, could also be a plot maybe with two shaded regions -->
+
+::: {.panel-tabset}
+
+### Player Selections
 
 
 ```{r}
@@ -139,6 +226,7 @@ player_selections_table <- player_selections_plot |>
     owned_by_adjusted_max_date = snapshot_date[owned_by_adjusted_which_max],
     owned_by = tail(owned_by, 1),
     owned_by_adjusted_now = tail(owned_by_adjusted, 1),
+    selections_now = tail(selections, 1),
     change_yesterday = tail(owned_by_adjusted_diff, 1),
     change_week = sum(tail(owned_by_adjusted_diff, 7)),
     change_which_max = which.max(abs(tail(owned_by_adjusted_diff, -1)))[1] + 1,
@@ -152,10 +240,21 @@ player_selections_table <- player_selections_plot |>
     selections_adjusted_diff_max = selections_adjusted_diff[selections_adjusted_diff_which_max],
     selections_adjusted_diff_max_date = snapshot_date[selections_adjusted_diff_which_max],
     gradient = mean(tail(owned_by_adjusted_diff, -1)),
+    selections_any_captain_adjusted = tail(selections_any_captain_adjusted, 1),
+    selections_captain_adjusted = tail(selections_captain_adjusted, 1),
+    selections_vice_captain_adjusted = tail(selections_vice_captain_adjusted, 1),
+    selections_bench_adjusted = tail(selections_bench_adjusted, 1),
+    selections_emergency_adjusted = tail(selections_emergency_if_owned, 1),
+    selections_any_captain_if_owned = tail(selections_any_captain_if_owned, 1),
+    selections_captain_if_owned = tail(selections_captain_if_owned, 1),
+    selections_vice_captain_if_owned = tail(selections_vice_captain_if_owned, 1),
+    selections_bench_if_owned = tail(selections_bench_if_owned, 1),
+    selections_emergency_if_owned = tail(selections_emergency_if_owned, 1),
+    selections_emergency_if_bench = tail(selections_emergency_if_bench, 1),
     .groups = "drop"
   ) |> 
   select(-change_which_max, -owned_by_adjusted_which_max, -selections_adjusted_diff_which_max) |> 
-  relocate(owned_by, owned_by_adjusted_now, .after = "full_name") |> 
+  relocate(owned_by, owned_by_adjusted_now, selections_now, .after = "full_name") |> 
   arrange(desc(owned_by))
 
 
@@ -168,7 +267,8 @@ player_selections_table |>
         tags$a(cell_value, href = paste0("?playerid=", id, "#plot"))
       }),
       owned_by = colDef(name = "Official"),
-      owned_by_adjusted_now = colDef(name = "Adjusted"),
+      owned_by_adjusted_now = colDef(name = "Adjusted", ),
+      selections_now = colDef(name = "Absolute", format = colFormat(separators = TRUE)),
       owned_by_max = colDef(name = "Official"),
       owned_by_adjusted_max = colDef(name = "Adjusted"),
       owned_by_adjusted_max_date = colDef(name = "Date", format = colFormat(date = TRUE)),
@@ -182,14 +282,27 @@ player_selections_table |>
       selections_adjusted_diff_week = colDef("Week", format = colFormat(separators = TRUE)),
       selections_adjusted_diff_max = colDef("Peak", format = colFormat(separators = TRUE)),
       selections_adjusted_diff_max_date = colDef("Date", format = colFormat(date = TRUE)),
-      gradient = colDef(name = "Gradient", format = colFormat(digits = 5))
+      gradient = colDef(name = "Gradient", format = colFormat(digits = 5)),
+      selections_any_captain_adjusted = colDef(name = "Any Captain", format = colFormat(digits = 2)),
+      selections_captain_adjusted = colDef(name = "Captain", format = colFormat(digits = 2)),
+      selections_vice_captain_adjusted = colDef(name = "Vice Captain", format = colFormat(digits = 2)),
+      selections_bench_adjusted = colDef(name = "Bench", format = colFormat(digits = 2)),
+      selections_emergency_adjusted = colDef(name = "Emergency", format = colFormat(digits = 2)),
+      selections_any_captain_if_owned = colDef(name = "Any Captain", format = colFormat(digits = 2)),
+      selections_captain_if_owned = colDef(name = "Captain", format = colFormat(digits = 2)),
+      selections_vice_captain_if_owned = colDef(name = "Vice Captain", format = colFormat(digits = 2)),
+      selections_bench_if_owned = colDef(name = "Bench", format = colFormat(digits = 2)),
+      selections_emergency_if_owned = colDef(name = "Emergency", format = colFormat(digits = 2)),
+      selections_emergency_if_bench = colDef(name = "Emergency if Bench", format = colFormat(digits = 2))
     ),
     columnGroups = list(
-      colGroup(name = "Current Ownership", columns = c("owned_by", "owned_by_adjusted_now")),
+      colGroup(name = "Current Ownership", columns = c("owned_by", "owned_by_adjusted_now", "selections_now")),
       colGroup(name = "Peak Ownership", columns = c("owned_by_max", "owned_by_adjusted_max", "owned_by_adjusted_max_date")),
       colGroup(name = "Change in Adjusted Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date")),
       colGroup(name = "% Change", columns = c("percent_change_yesterday", "percent_change_week")),
-      colGroup(name = "Change in Absolute Selections (Adjusted)", columns = c("selections_adjusted_diff_yesterday", "selections_adjusted_diff_week", "selections_adjusted_diff_max", "selections_adjusted_diff_max_date"))
+      colGroup(name = "Change in Absolute Selections (Adjusted)", columns = c("selections_adjusted_diff_yesterday", "selections_adjusted_diff_week", "selections_adjusted_diff_max", "selections_adjusted_diff_max_date")),
+      colGroup(name = "Role Selections (Adjusted)", columns = c("selections_any_captain_adjusted", "selections_captain_adjusted", "selections_vice_captain_adjusted", "selections_bench_adjusted", "selections_emergency_adjusted")),
+      colGroup(name = "Role Selections (If Owned)", columns = c("selections_any_captain_if_owned", "selections_captain_if_owned", "selections_vice_captain_if_owned", "selections_bench_if_owned", "selections_emergency_if_owned", "selections_emergency_if_bench"))
     ),
     filterable = TRUE
   )
@@ -198,6 +311,55 @@ player_selections_table |>
 
 
 ```
+
+### Fantasy Coaches
+
+```{r}
+
+player_selections_plot |> 
+  group_by(snapshot_date) |> 
+  summarise(
+    fantasy_coaches = head(fantasy_coaches, 1),
+    fantasy_coaches_diff = head(fantasy_coaches_diff, 1),
+    completion_percentage = head(completion_percentage, 1),
+    completion_percentage_captain = head(completion_percentage_captain, 1),
+    completion_percentage_vice_captain = head(completion_percentage_vice_captain, 1),
+    completion_percentage_bench = head(completion_percentage_bench, 1),
+    completion_percentage_emergency = head(completion_percentage_emergency, 1),
+    sum_trades = round(sum(abs(selections_adjusted_diff))/2, 0),
+    .groups = "drop"
+  ) |>
+  mutate(
+    turnover = round(sum_trades / lag(fantasy_coaches), 3)
+  ) |> 
+  arrange(desc(snapshot_date)) |> 
+  reactable(
+    columns = list(
+      snapshot_date = colDef(name  = "Date"),
+      fantasy_coaches = colDef(name  = "Count", format = colFormat(separators = TRUE)),
+      fantasy_coaches_diff = colDef(name  = "Increase", format = colFormat(separators = TRUE)),
+      completion_percentage = colDef(name = "Overall", format = colFormat(percent = TRUE, digits = 1)),
+      completion_percentage_captain = colDef(name = "Captain", format = colFormat(percent = TRUE, digits = 1)),
+      completion_percentage_vice_captain = colDef(name = "VC", format = colFormat(percent = TRUE, digits = 1)),
+      completion_percentage_bench = colDef(name = "Bench", format = colFormat(percent = TRUE, digits = 1)),
+      completion_percentage_emergency = colDef(name = "Emergency", format = colFormat(percent = TRUE, digits = 1)),
+      sum_trades = colDef(name = "Count", format = colFormat(separators = TRUE)),
+      turnover = colDef(name = "Turnover", format = colFormat(percent = TRUE, digits = 1))
+    ),
+    columnGroups = list(
+      colGroup(name = "Fantasy Coaches", columns = c("fantasy_coaches", "fantasy_coaches_diff")),
+      colGroup(name = "Team Completion %", columns = c("completion_percentage", "completion_percentage_captain", "completion_percentage_vice_captain", "completion_percentage_bench", "completion_percentage_emergency")),
+      colGroup(name = "Turnover", columns = c("sum_trades", "turnover"))
+    ),
+    filterable = TRUE
+  )
+
+
+```
+
+
+
+:::
 
 
 ## Explanation
@@ -234,7 +396,7 @@ This is a rough approximation but it leads to the most selected player (Harley R
 
 //var selectedDataset = document.getElementById('player-select').value;
 
-update_plotly_plot = function(player_id) {
+update_plotly_plot_ownership = function(player_id) {
   if(!(player_id == '')) {
   
   fetch("json_data/owned_by_adjusted_plot_data.json")
@@ -243,19 +405,45 @@ update_plotly_plot = function(player_id) {
       // Convert the data to the format Plotly expects
       data_player = data[player_id];
       //console.log(data_player);
-      Plotly.restyle('plotly_plot', 'x', [data_player['daily_decrease_x']], [0,2]);
-      Plotly.restyle('plotly_plot', 'y', [data_player['daily_decrease_y_abs']], [0]);
-      Plotly.restyle('plotly_plot', 'base', [data_player['daily_decrease_y']], [0]);
-      Plotly.restyle('plotly_plot', 'y', [data_player['daily_decrease_y']], [2]);
-      Plotly.restyle('plotly_plot', 'text', [data_player['daily_decrease_text']], [0,2]);
-      Plotly.restyle('plotly_plot', 'x', [data_player['daily_increase_x']], [1,3]);
-      Plotly.restyle('plotly_plot', 'y', [data_player['daily_increase_y']], [1,3]);
-      Plotly.restyle('plotly_plot', 'text', [data_player['daily_increase_text']], [1,3]);
-      Plotly.restyle('plotly_plot', 'x', [data_player['snapshot_x']], [4]);
-      Plotly.restyle('plotly_plot', 'y', [data_player['snapshot_y']], [4]);
-      Plotly.restyle('plotly_plot', 'text', [data_player['snapshot_text']], [4]);
+      Plotly.restyle('plotly_plot_ownership', 'x', [data_player['daily_decrease_x']], [0,2]);
+      Plotly.restyle('plotly_plot_ownership', 'y', [data_player['daily_decrease_y_abs']], [0]);
+      Plotly.restyle('plotly_plot_ownership', 'base', [data_player['daily_decrease_y']], [0]);
+      Plotly.restyle('plotly_plot_ownership', 'y', [data_player['daily_decrease_y']], [2]);
+      Plotly.restyle('plotly_plot_ownership', 'text', [data_player['daily_decrease_text']], [0,2]);
+      Plotly.restyle('plotly_plot_ownership', 'x', [data_player['daily_increase_x']], [1,3]);
+      Plotly.restyle('plotly_plot_ownership', 'y', [data_player['daily_increase_y']], [1,3]);
+      Plotly.restyle('plotly_plot_ownership', 'text', [data_player['daily_increase_text']], [1,3]);
+      Plotly.restyle('plotly_plot_ownership', 'x', [data_player['snapshot_x']], [4]);
+      Plotly.restyle('plotly_plot_ownership', 'y', [data_player['snapshot_y']], [4]);
+      Plotly.restyle('plotly_plot_ownership', 'text', [data_player['snapshot_text']], [4]);
       
-      Plotly.relayout('plotly_plot', {
+      Plotly.restyle('plotly_plot_role_if_owned', 'text', [data_player['any_captain_if_owned_text']], [0]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'y', [data_player['any_captain_if_owned_y']], [0]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'text', [data_player['bench_if_owned_text']], [1]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'y', [data_player['bench_if_owned_y']], [1]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'text', [data_player['captain_if_owned_text']], [2]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'y', [data_player['captain_if_owned_y']], [2]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'text', [data_player['emergency_if_bench_text']], [3]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'y', [data_player['emergency_if_bench_y']], [3]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'text', [data_player['emergency_if_owned_text']], [4]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'y', [data_player['emergency_if_owned_y']], [4]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'text', [data_player['vice_captain_if_owned_text']], [5]);
+      Plotly.restyle('plotly_plot_role_if_owned', 'y', [data_player['vice_captain_if_owned_y']], [5]);
+      
+      Plotly.restyle('plotly_plot_role_adjusted', 'text', [data_player['any_captain_adjusted_text']], [0]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'y', [data_player['any_captain_adjusted_y']], [0]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'text', [data_player['bench_adjusted_text']], [1]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'y', [data_player['bench_adjusted_y']], [1]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'text', [data_player['captain_adjusted_text']], [2]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'y', [data_player['captain_adjusted_y']], [2]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'text', [data_player['emergency_adjusted_text']], [3]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'y', [data_player['emergency_adjusted_y']], [3]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'text', [data_player['snapshot_text']], [4]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'y', [data_player['snapshot_y']], [4]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'text', [data_player['vice_captain_adjusted_text']], [5]);
+      Plotly.restyle('plotly_plot_role_adjusted', 'y', [data_player['vice_captain_adjusted_y']], [5]);
+      
+      Plotly.relayout('plotly_plot_ownership', {
         'title': data_player['full_name'][0],
         'xaxis.autorange': true,
         'yaxis.autorange': true,
@@ -263,7 +451,22 @@ update_plotly_plot = function(player_id) {
         
       });
       
-      //console.log(document.getElementById('plotly_plot').data);
+      Plotly.relayout('plotly_plot_role_if_owned', {
+        'title': data_player['full_name'][0],
+        'xaxis.autorange': true,
+        'yaxis.autorange': true,
+        'yaxis.dtick': data_player['tick_interval_if_owned'][0]
+      });
+      
+      Plotly.relayout('plotly_plot_role_adjusted', {
+        'title': data_player['full_name'][0],
+        'xaxis.autorange': true,
+        'yaxis.autorange': true,
+        'yaxis.dtick': data_player['tick_interval'][0]
+        
+      });
+      
+      //console.log(document.getElementById('plotly_plot_ownership').data);
   
     });
     }
@@ -279,7 +482,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if(playerId) {
   
-    update_plotly_plot(playerId);
+    update_plotly_plot_ownership(playerId);
   };
   
 
@@ -287,7 +490,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // options and callbacks here
     onChange: function(value){
       // console.log(value);
-      update_plotly_plot(value);
+      update_plotly_plot_ownership(value);
     }
     });
   });
