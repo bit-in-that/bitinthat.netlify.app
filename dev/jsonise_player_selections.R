@@ -73,13 +73,13 @@ owned_by_adjusted_plot_data <- all_player_ids |>
 
     if(max_ownership_if_owned>=75) {
       tick_interval_if_owned <- 20
-    } else if(max_ownership>=50){
+    } else if(max_ownership_if_owned>=50){
       tick_interval_if_owned <- 10
-    } else if(max_ownership>=25){
+    } else if(max_ownership_if_owned>=25){
       tick_interval_if_owned <- 5
-    } else if(max_ownership>=2.5){
+    } else if(max_ownership_if_owned>=2.5){
       tick_interval_if_owned <- 1
-    } else if(max_ownership>=0.25){
+    } else if(max_ownership_if_owned>=0.25){
       tick_interval_if_owned <- 0.1
     } else {
       tick_interval_if_owned <- 0.01
