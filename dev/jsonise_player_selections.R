@@ -13,7 +13,7 @@ create_text_role_label <- function(snapshot_date, metric_value, metric_label, of
     completion_label <- paste(str_remove(metric_label, fixed(" (Adjusted)")), "Role Completion")
   }
   
-  paste0("Snapshot Date: ", format(snapshot_date, format = "%Y-%m-%d"), "<br />", metric_label, ": ", round(metric_value, 2), "% (normalised for: ~", round(100*completion_value, 2), "% ", completion_label, ")<br />Official: ", official_value, "%")
+  paste0("Snapshot Date: ", format(snapshot_date, format = "%Y-%m-%d"), "<br /><b>", metric_label, ": ", round(metric_value, 2), "%</b><br />Normalised for: ~", round(100*completion_value, 2), "% ", completion_label, "<br />Official: ", official_value, "%")
   
 }
 

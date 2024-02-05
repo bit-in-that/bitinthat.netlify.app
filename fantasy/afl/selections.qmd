@@ -344,7 +344,7 @@ player_selections_plot |>
       completion_percentage_bench = colDef(name = "Bench", format = colFormat(percent = TRUE, digits = 1)),
       completion_percentage_emergency = colDef(name = "Emergency", format = colFormat(percent = TRUE, digits = 1)),
       sum_trades = colDef(name = "Count", format = colFormat(separators = TRUE)),
-      turnover = colDef(name = "Turnover", format = colFormat(percent = TRUE, digits = 1))
+      turnover = colDef(name = "Percentage", format = colFormat(percent = TRUE, digits = 1))
     ),
     columnGroups = list(
       colGroup(name = "Fantasy Coaches", columns = c("fantasy_coaches", "fantasy_coaches_diff")),
