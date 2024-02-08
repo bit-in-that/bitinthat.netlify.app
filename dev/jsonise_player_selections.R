@@ -4,6 +4,12 @@ library(purrr)
 library(stringr)
 library(jsonlite)
 
+player_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/af_player_data.parquet") |> 
+  transmute(
+    id,
+    label = paste0(first_name, " ", last_name, " || ", position, " || $", comma(cost/1000), "K || ", team_name)
+  )
+
 player_selections_long <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/player_selections_long.parquet")
 
 all_player_ids <- unique(player_selections_long$id)
@@ -35,7 +41,8 @@ player_selections_modified <- player_selections_long |>
     emergency_if_bench_text = create_text_role_label(snapshot_date, selections_emergency_if_bench, "Emergency (If Bench)", selections_emergency, selections_bench/100, "Bench Selections"),
     any_captain_adjusted_text = create_text_role_label(snapshot_date, selections_any_captain_adjusted, "Any Captain (Adjusted)", selections_captain + selections_vice_captain, completion_percentage_captain),
     any_captain_if_owned_text = create_text_role_label(snapshot_date, selections_any_captain_if_owned, "Any Captain (If Owned)", selections_captain + selections_vice_captain, owned_by/100, "Ownership")
-    )
+    ) |> 
+  left_join(player_data, by = "id")
 
 owned_by_adjusted_plot_data <- all_player_ids |> 
   `names<-`(all_player_ids) |> 
@@ -44,6 +51,7 @@ owned_by_adjusted_plot_data <- all_player_ids |>
       filter(.x == id)
     
     player_name <- individual_player_data$full_name[1]
+    label <- individual_player_data$label[1]
     
     daily_increase_data <- individual_player_data |> 
       filter(
@@ -87,6 +95,7 @@ owned_by_adjusted_plot_data <- all_player_ids |>
     
     list(
       full_name = player_name,
+      label = label,
       tick_interval = tick_interval,
       tick_interval_if_owned = tick_interval_if_owned,
       daily_increase_x = daily_increase_data$snapshot_date_int,
@@ -124,4 +133,6 @@ owned_by_adjusted_plot_data <- all_player_ids |>
     )
   })
 
-write_json(owned_by_adjusted_plot_data, "fantasy/afl/json_data/owned_by_adjusted_plot_data.json")
+system.time({
+  iwalk(owned_by_adjusted_plot_data,~ write_json(.x, paste0("fantasy/afl/json_data/owned_by_adjusted_plot_data/", .y, ".json")))
+})

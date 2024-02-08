@@ -24,6 +24,7 @@ library(purrr)
 library(reactable)
 library(tidyr)
 library(stringr)
+library(scales)
 
 ```
 
@@ -44,6 +45,12 @@ update_plotly_legend_labels <- function(plotly_object, legend_labels) {
   plotly_build(plotly_list)
 }
 
+player_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/af_player_data.parquet") |> 
+  transmute(
+    id,
+    label = paste0(first_name, " ", last_name, " || ", position, " || $", comma(cost/1000), "K || ", team_name)
+  )
+
 player_selections_plot <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/player_selections_long.parquet") |> 
     mutate(
       direction = if_else(owned_by_adjusted_diff>0, "Daily Increase", "Daily Decrease"),
@@ -52,7 +59,8 @@ player_selections_plot <- read_parquet("https://github.com/bit-in-that/data-auto
     mutate(
     snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney") - 1,
     full_name = paste(first_name, last_name)
-  )
+  ) |> 
+  left_join(player_data, by = "id")
 
 
 player_id_list <- player_selections_plot |>
@@ -71,10 +79,10 @@ player_selections_plot |>
   distinct(id, .keep_all = TRUE) |>
   transmute(
     id,
-    full_name = paste(first_name, last_name)
+    label
   ) |> 
   with({
-    map2(id, full_name, ~{
+    map2(id, label, ~{
       tags$option(value = .x, .y)
     })
   }) |> 
@@ -399,11 +407,10 @@ This is a rough approximation but it leads to the most selected player (Harley R
 update_plotly_plot_ownership = function(player_id) {
   if(!(player_id == '')) {
   
-  fetch("json_data/owned_by_adjusted_plot_data.json")
+  fetch("json_data/owned_by_adjusted_plot_data/" + player_id + ".json")
     .then(response => response.json())
-    .then(data => {
+    .then(data_player => {
       // Convert the data to the format Plotly expects
-      data_player = data[player_id];
       //console.log(data_player);
       Plotly.restyle('plotly_plot_ownership', 'x', [data_player['daily_decrease_x']], [0,2]);
       Plotly.restyle('plotly_plot_ownership', 'y', [data_player['daily_decrease_y_abs']], [0]);
@@ -444,7 +451,7 @@ update_plotly_plot_ownership = function(player_id) {
       Plotly.restyle('plotly_plot_role_adjusted', 'y', [data_player['vice_captain_adjusted_y']], [5]);
       
       Plotly.relayout('plotly_plot_ownership', {
-        'title': data_player['full_name'][0],
+        'title': data_player['label'][0],
         'xaxis.autorange': true,
         'yaxis.autorange': true,
         'yaxis.dtick': data_player['tick_interval'][0]
@@ -452,14 +459,14 @@ update_plotly_plot_ownership = function(player_id) {
       });
       
       Plotly.relayout('plotly_plot_role_if_owned', {
-        'title': data_player['full_name'][0],
+        'title': data_player['label'][0],
         'xaxis.autorange': true,
         'yaxis.autorange': true,
         'yaxis.dtick': data_player['tick_interval_if_owned'][0]
       });
       
       Plotly.relayout('plotly_plot_role_adjusted', {
-        'title': data_player['full_name'][0],
+        'title': data_player['label'][0],
         'xaxis.autorange': true,
         'yaxis.autorange': true,
         'yaxis.dtick': data_player['tick_interval'][0]
@@ -481,8 +488,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const playerId = queryParams.get('playerid');
 
   if(playerId) {
-  
     update_plotly_plot_ownership(playerId);
+    
+  } else {
+    update_plotly_plot_ownership("1004592"); //Tim English
+    
   };
   
 
