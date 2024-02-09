@@ -3,6 +3,7 @@ library(dplyr)
 library(purrr)
 library(stringr)
 library(jsonlite)
+library(scales)
 
 player_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/af_player_data.parquet") |> 
   transmute(
