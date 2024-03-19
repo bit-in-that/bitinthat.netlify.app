@@ -21,25 +21,30 @@ mutate(
     img_url = paste0("https://fantasy.afl.com.au/assets/media/avatars/afl/", user_id, ".png"),
     fantasy_url = if_else(is.na(team_id), NA_character_, paste0("https://fantasy.afl.com.au/classic/team/user/", team_id))
   ) |> 
-  select("team_name", "rank_2022", "rank_2023", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
-  arrange(rank_2023)
+  select("team_name", "rank_2022", "rank_2023", "rank_2024", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
+  arrange(rank_2024)
 
-overall_ranks_combined_2022_2023 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/overall_ranks_combined_2022_2023.parquet") |> 
+overall_ranks_2024 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/raw/2024/afl_fantasy_rankings.parquet"
+) |> 
+  select(user_id, rank_2024 = rank)
+
+overall_ranks_combined <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/overall_ranks_combined_2022_2023.parquet") |> 
+  left_join(overall_ranks_2024, by = "user_id") |> 
   mutate(
     img_url = paste0("https://fantasy.afl.com.au/assets/media/avatars/afl/", user_id, ".png"),
     fantasy_url = if_else(is.na(team_id), NA_character_, paste0("https://fantasy.afl.com.au/classic/team/user/", team_id)),
     is_content_creator = user_id %in% content_creators_ranks$user_id
   ) |> 
-  select(team_name, is_content_creator, rank_2022, rank_2023, img_url, fantasy_url)
+  select(team_name, is_content_creator, rank_2022, rank_2023, rank_2024, img_url, fantasy_url)
 
 ```
 
 
 ```{r}
 reactable_b2b <- function(upper_bound) {
-  ranks_data <- overall_ranks_combined_2022_2023 |> 
+  ranks_data <- overall_ranks_combined |> 
     filter(rank_2022 <= upper_bound, rank_2023 <= upper_bound) |> 
-    arrange(rank_2023)
+    arrange(rank_2024)
   
   ranks_data |> 
     reactable(
@@ -77,12 +82,13 @@ reactable_b2b <- function(upper_bound) {
           ),
         rank_2022 = colDef(name = "2022", width = 75),
         rank_2023 = colDef(name = "2023", width = 75),
+        rank_2024 = colDef(name = "2024", width = 75),
         img_url = colDef(show = FALSE),
         fantasy_url = colDef(show = FALSE)
       ),
       columnGroups = list(
         colGroup(name = "", columns = c("is_content_creator")),
-        colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023"))
+        colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023", "rank_2024"))
       ),
       fullWidth = FALSE,
       filterable = TRUE
@@ -222,6 +228,7 @@ content_creators_ranks |>
       ),
       rank_2022 = colDef(name = "2022", width = 75),
       rank_2023 = colDef(name = "2023", width = 75),
+      rank_2024 = colDef(name = "2024", width = 75),
       individual_url = colDef(show = FALSE),
       twitter = colDef(show = FALSE),
       facebook = colDef(show = FALSE),
@@ -232,7 +239,7 @@ content_creators_ranks |>
       fantasy_url = colDef(show = FALSE)
     ),
     columnGroups = list(
-      colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023")),
+      colGroup(name = "Overall Rank", columns = c("rank_2022", "rank_2023", "rank_2024")),
       colGroup(name = "", columns = c("name")),
       colGroup(name = "Organisation", columns = c("organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url"))
       ),
