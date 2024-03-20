@@ -282,7 +282,7 @@ player_selections_table |>
       owned_by_max = colDef(name = "Official"),
       owned_by_adjusted_max = colDef(name = "Adjusted"),
       owned_by_adjusted_max_date = colDef(name = "Date", format = colFormat(date = TRUE)),
-      selections_autofill = colDef(name = "Autopick", format = colFormat(separators = TRUE))),
+      selections_autofill = colDef(name = "Autopick", format = colFormat(separators = TRUE)),
       change_yesterday = colDef(name = "Yesterday", format = colFormat(digits = 2)),
       change_week = colDef(name = "Past Week", format = colFormat(digits = 2)),
       change_max = colDef(name = "Peak Day", format = colFormat(digits = 2)),
