@@ -388,12 +388,12 @@ $$
 $$
 
 
-This is a rough approximation but it leads to the most selected player (Harley Reid) being close to 100% at this stage.
+This is a rough approximation but it led to the most selected player (Harley Reid) being close to 100% at the beginning of the pre-season.
 
 
 #### UPDATE: Auto-picks
 
-The selction numbers in the formulae above have also been adjusted further to remove auto-picks post 16th of March 2024. The number of auto-picks are an estimate but appear to improve the previous results which didn't make much sense.
+The selection numbers in the formulae above have also been adjusted further to remove auto-picks post 16^th^ of March 2024. The number of auto-picks are an estimate but appear to improve the previous results which didn't make much sense.
 
 
 
