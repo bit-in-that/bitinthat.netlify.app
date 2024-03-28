@@ -149,6 +149,8 @@ top_teams_2024 <- rank_template |>
 
 
 ```
+
+
 ::: {.panel-tabset}
 
 
@@ -190,7 +192,7 @@ top_teams_2023 |>
   )
 ```
 
-
+:::
 
 # {{< fa record-vinyl >}} Proven Track Record
 
