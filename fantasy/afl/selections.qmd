@@ -29,9 +29,155 @@ library(scales)
 ```
 
 
-## Ownership over time
+# Top Team Ownership
 
-### Plot
+
+```{r}
+afl_fantasy_lineups <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/raw/2024/afl_fantasy_lineups.parquet")
+
+af_player_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/af_player_data.parquet")
+
+af_player_data_by_round <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/2024/af_player_data_by_round.parquet")
+
+afl_fantasy_lineups_augmented <- afl_fantasy_lineups |> 
+  left_join(
+    transmute(af_player_data, player_id = id, player_name = paste(first_name, last_name), player_team = team_name, player_position = position),
+    by = "player_id") |>
+    left_join(
+    transmute(af_player_data_by_round, player_id = id, round = as.character(round), player_score = round_score),
+    by = c("player_id", "round"))
+
+
+```
+
+
+Not that the information below is as at the end of round 2.
+
+::: {.panel-tabset}
+
+
+## 2024 Top Teams
+
+```{r}
+top_team_ownership_2024 <- afl_fantasy_lineups_augmented |>
+  filter(rank_2024<=10000L) |> 
+  group_by(player_id, player_name) |> 
+  summarise(
+    top_10k = sum(rank_2024<=10000L)/10000,
+    top_5k = sum(rank_2024<=5000L)/5000,
+    top_2k = sum(rank_2024<=2000L)/2000,
+    top_1k = sum(rank_2024<=1000L)/1000,
+    top_100 = sum(rank_2024<=100L)/100,
+    top_1 = sum(rank_2024<=1L)/1,
+    .groups = "drop"
+  ) |> 
+  arrange(
+    desc(top_100)
+  )
+
+top_team_ownership_2024 |> 
+  reactable(
+    columns = list(
+      player_id = colDef(show = FALSE),
+      player_name = colDef(name = "Player Name", width = 150, sticky = "left"),
+      top_10k = colDef(name = "10k", format = colFormat(percent = TRUE, digits = 2)),
+      top_5k = colDef(name = "5k", format = colFormat(percent = TRUE, digits = 2)),
+      top_2k = colDef(name = "2k", format = colFormat(percent = TRUE, digits = 2)),
+      top_1k = colDef(name = "1k", format = colFormat(percent = TRUE, digits = 2)),
+      top_100 = colDef(name = "100🧢", format = colFormat(percent = TRUE, digits = 2)),
+      top_1 = colDef(name = "1🚗", format = colFormat(percent = TRUE, digits = 2))
+    ),
+    columnGroups = list(
+      colGroup("Ownership by teams in the 2024 top...", columns = c("top_10k", "top_5k", "top_2k", "top_1k", "top_100", "top_1"))
+    ),
+    filterable = TRUE
+  )
+
+```
+
+
+
+## 2023 Top Teams
+
+Note that some of the teams have been excluded from this list because they are very lowly ranked in 2024 (i.e. probably not taking it seriously this year). I have arbitrarily chosen the rank cut-off at 80K by having a look at some teams and noticing that some have just been unlucky around that range rather than not actively playing.
+
+There could be better ways of approaching this (e.g. check who made trades between rounds 1 and 2 but this is what I have done for now).
+
+```{r}
+returning_2023_coach_counts <- afl_fantasy_lineups_augmented |>
+  filter(rank_2023<=10000L, rank_2024<=80000L) |> 
+  summarise(
+    top_10k = sum(rank_2023 <= 10000L) / 30,
+    top_5k = sum(rank_2023 <= 5000L) / 30,
+    top_2k = sum(rank_2023 <= 2000L) / 30,
+    top_1k = sum(rank_2023 <= 1000L) / 30,
+    top_100 = sum(rank_2023 <= 100L) / 30,
+    top_1 = sum(rank_2023 <=1L) / 30
+  )
+  
+top_team_ownership_2023 <- afl_fantasy_lineups_augmented |> 
+  filter(rank_2023<=10000L, rank_2024<=80000L) |> 
+  group_by(player_id, player_name) |>
+  summarise(
+    top_10k = sum(rank_2023<=10000L, na.rm = TRUE)/returning_2023_coach_counts$top_10k,
+    top_5k = sum(rank_2023<=5000L, na.rm = TRUE)/returning_2023_coach_counts$top_5k,
+    top_2k = sum(rank_2023<=2000L, na.rm = TRUE)/returning_2023_coach_counts$top_2k,
+    top_1k = sum(rank_2023<=1000L, na.rm = TRUE)/returning_2023_coach_counts$top_1k,
+    top_100 = sum(rank_2023<=100L, na.rm = TRUE)/returning_2023_coach_counts$top_100,
+    top_1 = sum(rank_2023<=1L, na.rm = TRUE)/returning_2023_coach_counts$top_1,
+    .groups = "drop"
+  ) |> 
+  arrange(
+    desc(top_100)
+  )
+
+top_team_ownership_2023 |> 
+  reactable(
+    columns = list(
+      player_id = colDef(show = FALSE),
+      player_name = colDef(name = "Player Name", width = 150, sticky = "left"),
+      top_10k = colDef(name = "10k", format = colFormat(percent = TRUE, digits = 2)),
+      top_5k = colDef(name = "5k", format = colFormat(percent = TRUE, digits = 2)),
+      top_2k = colDef(name = "2k", format = colFormat(percent = TRUE, digits = 2)),
+      top_1k = colDef(name = "1k", format = colFormat(percent = TRUE, digits = 2)),
+      top_100 = colDef(name = "100🧢", format = colFormat(percent = TRUE, digits = 2)),
+      top_1 = colDef(name = "1🚗", format = colFormat(percent = TRUE, digits = 2))
+    ),
+    columnGroups = list(
+      colGroup("Ownership by teams in the 2023 top...", columns = c("top_10k", "top_5k", "top_2k", "top_1k", "top_100", "top_1"))
+    ),
+    filterable = TRUE
+  )
+
+
+```
+
+
+
+:::
+
+```{r old code, eval=FALSE}
+
+team_count <- afl_fantasy_lineups$user_id |> unique() |> length()
+
+# old code looking at red dots trying to suss out teams not taking it seriously but we're just going to use rank instead.
+afl_fantasy_lineups_augmented |>
+  group_by(user_id, team_id, rank_2023, rank_2024) |>
+  summarise(
+    pre_saturday_count = sum(player_team %in% c("Richmond", "Carlton", "Sydney Swans", "Collingwood")),
+    red_dot_count = sum(is.na(player_score)),
+    red_dots = paste(player_name[is.na(player_score)], collapse = ", "),
+    .groups = "drop"
+  )
+
+```
+
+
+
+
+# Ownership over time
+
+## Plot
 
 ```{r}
 update_plotly_legend_labels <- function(plotly_object, legend_labels) {
@@ -97,7 +243,7 @@ player_selections_plot |>
 
 ::: {.panel-tabset}
 
-#### Change in Ownership (Adjusted)
+### Change in Ownership (Adjusted)
 
 
 ```{r}
@@ -153,7 +299,7 @@ player_selections_role <- player_selections_plot |>
 
 ```
 
-#### Role (Adjusted)
+### Role (Adjusted)
 
 
 ```{r}
@@ -183,7 +329,7 @@ p_role_adjusted
 ```
 
 
-#### Role (If Owned)
+### Role (If Owned)
 
 ```{r}
 gg_role_if_owned <- player_selections_role |> 
@@ -212,13 +358,13 @@ p_role_if_owned
 
 :::
 
-### Table
+## Table
 
 <!-- Add a table in another table of people signed up and completed teams, could also be a plot maybe with two shaded regions -->
 
 ::: {.panel-tabset}
 
-#### Player Selections
+### Player Selections
 
 
 ```{r}
@@ -323,7 +469,7 @@ player_selections_table |>
 
 ```
 
-#### Fantasy Coaches
+### Fantasy Coaches
 
 ```{r}
 
@@ -373,7 +519,7 @@ player_selections_plot |>
 :::
 
 
-### Explanation
+## Explanation
 
 When people look at the ownership percentages for AFL fantasy, they often wonder why the most selected players are all below 70%. The reason for this is that a lot of teams are either missing players or are entirely empty. Fortunately there is a solution to this, I have devised the following formula to calculate a player's true selected number:
 
@@ -391,7 +537,7 @@ $$
 This is a rough approximation but it led to the most selected player (Harley Reid) being close to 100% at the beginning of the pre-season.
 
 
-#### UPDATE: Auto-picks
+### UPDATE: Auto-picks
 
 The selection numbers in the formulae above have also been adjusted further to remove auto-picks post 16^th^ of March 2024. The number of auto-picks are an estimate but appear to improve the previous results which didn't make much sense.
 

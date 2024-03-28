@@ -12,6 +12,8 @@ library(modules)
 library(arrow)
 library(reactable)
 library(dplyr)
+library(purrr)
+library(tidyr)
 library(htmltools)
 
 linked_icons <- use("../../modules/linked_icons.R")
@@ -24,9 +26,12 @@ mutate(
   select("team_name", "rank_2022", "rank_2023", "rank_2024", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
   arrange(rank_2024)
 
-overall_ranks_2024 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/raw/2024/afl_fantasy_rankings.parquet"
-) |> 
-  select(user_id, rank_2024 = rank)
+overall_ranks_2024 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/raw/2024/afl_fantasy_rankings.parquet")  |> 
+  mutate(team_url = paste0("https://fantasy.afl.com.au/classic/team/user/", team_id)) |> 
+  select(-team_id, -team_name, rank_2024 = rank)
+
+overall_ranks_2023 <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/overall_ranks_2023.parquet") |> 
+  select(user_id, rank_2023 = rank)
 
 overall_ranks_combined <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/afl_fantasy/data/processed/overall_ranks_combined_2022_2023.parquet") |> 
   left_join(overall_ranks_2024, by = "user_id") |> 
@@ -95,6 +100,96 @@ reactable_b2b <- function(upper_bound) {
     )
 }
 ```
+
+
+# {{< fa gauge-high >}} Overall Rank Pace
+
+Not that the information below is as at the end of round 2.
+
+
+```{r}
+overall_ranks <- overall_ranks_2024 |> 
+  left_join(overall_ranks_2023, by = "user_id")
+
+rank_template <- tibble(
+  rank = c(1, 100, 1000 * (1:9), 10000 *  (1:10))
+)
+
+top_teams_2023 <- rank_template |> 
+  mutate(
+    top_teams_2023 = map(rank, ~{
+      overall_ranks |> 
+        filter(rank_2023 <= .x) |> 
+        summarise(
+          returning_proportion = sum(!is.na(rank_2024))/.x,
+          median_rank_2024 = round(median(rank_2024, na.rm = TRUE), 0),
+          best_rank_2024 = round(min(rank_2024, na.rm = TRUE), 0),
+          average_points_2024 = round(mean(points, na.rm = TRUE), 0)
+        )
+      })
+  ) |> 
+  unnest(top_teams_2023)
+
+top_teams_2024 <- rank_template |> 
+  mutate(
+    top_teams_2024 = map(rank, ~{
+      overall_ranks |> 
+        filter(rank_2024 <= .x) |> 
+        summarise(
+          returning_proportion = sum(!is.na(rank_2023))/.x,
+          points_yardstick = min(points, na.rm = TRUE)
+        )
+      })
+  ) |> 
+  unnest(top_teams_2024) |> 
+  mutate(
+    points_off_car = points_yardstick[1] - points_yardstick,
+    points_off_hat = points_yardstick[2] - points_yardstick
+  )
+
+
+```
+::: {.panel-tabset}
+
+
+## 2024 Top Teams
+
+```{r}
+top_teams_2024 |> 
+  reactable(
+    columns = list(
+      rank = colDef(name = "2024 Rank", format = colFormat(separators = TRUE)),
+      returning_proportion = colDef(name = "Returning %", format = colFormat(percent = TRUE, digits = 1)),
+    points_yardstick = colDef(name = "Yardstick", format = colFormat(separators = TRUE)),
+    points_off_car = colDef(name = "Off Car", format = colFormat(separators = TRUE)),
+    points_off_hat = colDef(name = "Off Hat", format = colFormat(separators = TRUE))
+    ),
+    columnGroups = list(
+      colGroup(name = "Points", columns = c("points_yardstick", "points_off_car", "points_off_hat"))
+    ),
+    pagination = FALSE
+  )
+```
+
+## 2023 Top Teams
+
+```{r}
+top_teams_2023 |> 
+  reactable(
+    columns = list(
+      rank = colDef(name = "2023 Rank", format = colFormat(separators = TRUE)),
+      returning_proportion = colDef(name = "Returning %", format = colFormat(percent = TRUE, digits = 1)),
+    median_rank_2024 = colDef(name = "Median", format = colFormat(separators = TRUE)),
+    best_rank_2024 = colDef(name = "Best", format = colFormat(separators = TRUE)),
+    average_points_2024 = colDef(name = "Average Points (2024)", format = colFormat(separators = TRUE))
+    ),
+    columnGroups = list(
+      colGroup(name = "2024 Rank", columns = c("median_rank_2024", "best_rank_2024"))
+    ),
+    pagination = FALSE
+  )
+```
+
 
 
 # {{< fa record-vinyl >}} Proven Track Record
