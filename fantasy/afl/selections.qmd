@@ -51,7 +51,7 @@ afl_fantasy_lineups_augmented <- afl_fantasy_lineups |>
 ```
 
 
-Not that the information below is as at the end of round 2.
+Not that the information below is as at the end of round 3.
 
 ::: {.panel-tabset}
 
