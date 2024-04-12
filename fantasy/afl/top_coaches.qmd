@@ -104,7 +104,7 @@ reactable_b2b <- function(upper_bound) {
 
 # {{< fa gauge-high >}} Overall Rank Pace
 
-Not that the information below is as at the end of round 3.
+Not that the information below is as at the end of round 4.
 
 
 ```{r}
