@@ -42,6 +42,9 @@ overall_ranks_combined <- read_parquet("https://github.com/bit-in-that/data-auto
   ) |> 
   select(team_name, is_content_creator, rank_2022, rank_2023, rank_2024, img_url, fantasy_url)
 
+
+round_number <- max(overall_ranks_2024$round)
+
 ```
 
 
@@ -104,7 +107,7 @@ reactable_b2b <- function(upper_bound) {
 
 # {{< fa gauge-high >}} Overall Rank Pace
 
-Not that the information below is as at the end of round 4.
+Not that the information below is as at the end of round `r round_number`.
 
 
 ```{r}
