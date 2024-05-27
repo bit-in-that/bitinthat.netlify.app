@@ -101,13 +101,13 @@ top_team_ownership_2024 |>
 
 ## 2023 Top Teams
 
-Note that some of the teams have been excluded from this list because they are very lowly ranked in 2024 (i.e. probably not taking it seriously this year). I have arbitrarily chosen the rank cut-off at 80K by having a look at some teams and noticing that some have just been unlucky around that range rather than not actively playing.
+Note that some of the teams have been excluded from this list because they are very lowly ranked in 2024 (i.e. probably not taking it seriously this year). I have arbitrarily chosen the rank cut-off at 30K by having a look at some teams and noticing that some have just been unlucky around that range rather than not actively playing.
 
-There could be better ways of approaching this (e.g. check who made trades between rounds 1 and 2 but this is what I have done for now).
+There could be better ways of approaching this (e.g. check who made trades in each round but this is what I have done for now).
 
 ```{r}
 returning_2023_coach_counts <- afl_fantasy_lineups_augmented |>
-  filter(rank_2023<=10000L, rank_2024<=80000L) |> 
+  filter(rank_2023<=10000L, rank_2024<=30000L) |> 
   summarise(
     top_10k = sum(rank_2023 <= 10000L) / 30,
     top_5k = sum(rank_2023 <= 5000L) / 30,
