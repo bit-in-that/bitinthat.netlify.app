@@ -118,7 +118,7 @@ returning_2023_coach_counts <- afl_fantasy_lineups_augmented |>
   )
   
 top_team_ownership_2023 <- afl_fantasy_lineups_augmented |> 
-  filter(rank_2023<=10000L, rank_2024<=80000L) |> 
+  filter(rank_2023<=10000L, rank_2024<=30000L) |> 
   group_by(player_id, player_name) |>
   summarise(
     top_10k = sum(rank_2023<=10000L, na.rm = TRUE)/returning_2023_coach_counts$top_10k,
