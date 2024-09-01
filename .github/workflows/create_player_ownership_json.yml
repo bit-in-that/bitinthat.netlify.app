@@ -4,7 +4,7 @@ on:
   workflow_dispatch: 
     branches: build_player_profiles
   schedule:
-    - cron: "30 17 * * *" # 4:30AM AEST every day
+    # - cron: "30 17 * * *" # 4:30AM AEST every day
   
 jobs:
   build:
