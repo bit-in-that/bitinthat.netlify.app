@@ -20,12 +20,22 @@ library(htmltools)
 source("../../parameters.R")
 linked_icons <- use("../../modules/linked_icons.R")
 
-ranking_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/ranking_data.parquet") |> 
+ranking_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/ranking_data.parquet")
+
+round_number <- ranking_data |> 
+    slice(1) |> 
+    with(totalPoints/averagePoints) |> 
+    round(digits = 0) |> 
+    as.integer()
+
+
+ranking_data <- ranking_data |> 
   mutate( 
     img_url = paste0("https://aflwfantasy.afl/media/avatars/user/", userId, ".png?v=1"),
-    fantasy_url = paste0("https://aflwfantasy.afl/user/team/", parameters$round_number,"/", userId),
+    fantasy_url = paste0("https://aflwfantasy.afl/user/team/", round_number,"/", userId),
     value_rank = rank(-teamValue, ties.method = "first")
   ) 
+
 
 ranking_data_previous <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/ranking_data_previous.parquet") |> 
   select(totalPoints, overallRank, userId)
@@ -47,7 +57,7 @@ ranking_data <- ranking_data |>
 content_creators_ranks <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/aflw_fantasy/data/processed/content_creators_ranks_aflw.parquet") |>
 mutate( 
     img_url = paste0("https://aflwfantasy.afl/media/avatars/user/", user_id, ".png?v=1"),
-    fantasy_url = paste0("https://aflwfantasy.afl/user/team/", parameters$round_number,"/", team_id_2023)
+    fantasy_url = paste0("https://aflwfantasy.afl/user/team/", round_number,"/", team_id_2023)
   ) |> 
   select("team_name", "overall_rank", "total_points", "roundRank", "roundPoints", "name", "individual_url", "organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url", "img_url", "fantasy_url", "user_id") |> 
   arrange(overall_rank)
@@ -55,7 +65,7 @@ mutate(
 
 ```
 
-Note that all the information below is as at **round `r parameters$round_number`** of the 2023 AFLW season.
+Note that all the information below is as at **round `r round_number`** of the 2023 AFLW season.
 
 
 
@@ -120,8 +130,8 @@ rank_pace |>
       rank_label = colDef(show = FALSE)
     ),
     columnGroups = list(
-      colGroup(name = paste0("Round ", parameters$round_number," Points"), columns = c("mean_round_points", "points_to_maintain", "best_round_points", "worst_round_points")),
-      colGroup(name = paste0("Round ", parameters$round_number," Rank"), columns = c("best_round_rank", "worst_round_rank", "average_round_rank")),
+      colGroup(name = paste0("Round ", round_number," Points"), columns = c("mean_round_points", "points_to_maintain", "best_round_points", "worst_round_points")),
+      colGroup(name = paste0("Round ", round_number," Rank"), columns = c("best_round_rank", "worst_round_rank", "average_round_rank")),
       colGroup(name = "Change In Overall Rank", columns = c("best_rank_increase", "worst_rank_decrease", "average_rank_change")),
       colGroup(name = "Team Value", columns = c("average_value", "min_value", "max_value"))
       ),
@@ -215,7 +225,7 @@ content_creators_ranks |>
     ),
     columnGroups = list(
       colGroup(name = "Overall", columns = c("overall_rank", "total_points")),
-      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
+      colGroup(name = paste("Round", round_number), columns = c("roundRank", "roundPoints")),
       colGroup(name = "Organisation", columns = c("organisation", "twitter", "facebook", "website", "YouTube", "spotify", "primary_url"))
       ),
     filterable = TRUE
@@ -269,7 +279,7 @@ overall_rank_data |>
     ),
     columnGroups = list(
       colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
-      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
+      colGroup(name = paste("Round", round_number), columns = c("roundRank", "roundPoints")),
       colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
       ),
     filterable = TRUE
@@ -318,7 +328,7 @@ round_rank_data |>
     ),
     columnGroups = list(
       colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
-      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
+      colGroup(name = paste("Round", round_number), columns = c("roundRank", "roundPoints")),
       colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
       ),
     filterable = TRUE
@@ -368,7 +378,7 @@ value_data |>
     ),
     columnGroups = list(
       colGroup(name = "Overall", columns = c("overallRank", "totalPoints")),
-      colGroup(name = paste("Round", parameters$round_number), columns = c("roundRank", "roundPoints")),
+      colGroup(name = paste("Round", round_number), columns = c("roundRank", "roundPoints")),
       colGroup(name = "Team Value", columns = c("teamValue", "value_rank"))
       ),
     filterable = TRUE
