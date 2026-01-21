@@ -3,12 +3,13 @@ name: 2026 Update ownership jsons
 on:
   workflow_dispatch: 
   schedule:
-    - cron: "15 13 * * *" # 12:15AM AEST every day
-    - cron: "15 17 * * *" # 4:15AM AEST every day
-    - cron: "15 21 * * *" # 8:15AM AEST every day
-    - cron: "15 1 * * *" # 12:15PM AEST every day
-    - cron: "15 5 * * *" # 4:15PM AEST every day
-    - cron: "15 9 * * *" # 8:15PM AEST every day
+    - cron: "15 * * * *" # Every hour
+#    - cron: "15 13 * * *" # 12:15AM AEST every day
+#    - cron: "15 17 * * *" # 4:15AM AEST every day
+#    - cron: "15 21 * * *" # 8:15AM AEST every day
+#    - cron: "15 1 * * *" # 12:15PM AEST every day
+#    - cron: "15 5 * * *" # 4:15PM AEST every day
+#    - cron: "15 9 * * *" # 8:15PM AEST every day
   
 jobs:
   build:
