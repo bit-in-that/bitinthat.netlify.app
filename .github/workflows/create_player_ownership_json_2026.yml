@@ -1,0 +1,61 @@
+name: 2026 Update ownership jsons
+
+on:
+  workflow_dispatch: 
+  schedule:
+    - cron: "30 17 * * *" # 4:30AM AEST every day
+  
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+    - name: Install Australian Locale
+      run: |
+        sudo locale-gen en_AU
+        sudo locale-gen en_AU.utf8
+        sudo update-locale 
+    
+    - name: Check out repository
+      uses: actions/checkout@v4
+    
+    - name: Set up Quarto
+      uses: quarto-dev/quarto-actions/setup@v2
+    
+    - name: Install R
+      uses: r-lib/actions/setup-r@v2
+      with:
+        r-version: '4.3.1'
+    
+    - name: Install R Dependencies 
+      uses: r-lib/actions/setup-renv@v2
+      with:
+        cache-version: 1
+    
+    # - name: Create folders
+    #   run: |
+    #     mkdir -e players/afl/underage_profiles
+    #     mkdir -e players/aflw/underage_profiles
+    
+    - name: Run Script
+      run: |
+        source("dev/jsonise_player_selections_2026.R", echo = TRUE)
+      shell: Rscript {0}
+    
+    - name: Commit
+      run: |
+        git config --global user.name 'bit in that'
+        git config --global user.email 'timothy.gummer@gmail.com'
+        git add .
+        git pull
+        git commit -m 'ACTION: update ownership jsons (2026)' || echo "No changes to commit"
+        git pull
+        git push 
+
+# - name: Render and Publish
+#   uses: quarto-dev/quarto-actions/publish@v2
+#   with:
+#     target: netlify
+#     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

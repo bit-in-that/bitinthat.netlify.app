@@ -9,6 +9,7 @@ project:
   
   resources:
     - "fantasy/afl/json_data/**"
+    - "fantasy/2026/json_data/**"
     - "netlify.toml"
     - "_redirects"
   
