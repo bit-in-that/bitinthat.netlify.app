@@ -160,8 +160,8 @@ player_selections_table <- player_selections_plot |>
     change_which_max = which.max(abs(tail(ownership_adjusted_diff, -1)))[1] + 1,
     change_max = ownership_adjusted_diff[change_which_max],
     change_max_date = snapshot_date[change_which_max],
-    percent_change_yesterday = ownership_adjusted[n()]/ownership_adjusted[if_else(n() > 1, n() - 1,1)] - 1,
-    percent_change_week = ownership_adjusted[n()]/ownership_adjusted[n() - 6] - 1,
+    percent_change_yesterday =  last(ownership_adjusted) / nth(ownership_adjusted, -1) - 1,
+    percent_change_week =  last(ownership_adjusted) / nth(ownership_adjusted, -7) - 1,
     gradient = mean(tail(ownership_adjusted_diff, -1)),
     .groups = "drop"
   ) |> 
@@ -194,7 +194,8 @@ player_selections_table |>
     columnGroups = list(
       colGroup(name = "Current Ownership", columns = c("ownership", "ownership_adjusted_now")),
       colGroup(name = "Peak Ownership", columns = c("ownership_max", "ownership_adjusted_max", "ownership_adjusted_max_date")),
-      colGroup(name = "Change in Adjusted Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date"))
+      colGroup(name = "Change in Adjusted Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date")),
+      colGroup(name = "% Change", columns = c("percent_change_yesterday", "percent_change_week"))
     ),
     filterable = TRUE
   )
