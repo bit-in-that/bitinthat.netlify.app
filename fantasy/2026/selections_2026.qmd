@@ -160,7 +160,7 @@ player_selections_table <- player_selections_plot |>
     change_which_max = which.max(abs(tail(ownership_adjusted_diff, -1)))[1] + 1,
     change_max = ownership_adjusted_diff[change_which_max],
     change_max_date = snapshot_date[change_which_max],
-    percent_change_yesterday =  last(ownership_adjusted) / nth(ownership_adjusted, -1) - 1,
+    percent_change_yesterday =  last(ownership_adjusted) / nth(ownership_adjusted, -2) - 1,
     percent_change_week =  last(ownership_adjusted) / nth(ownership_adjusted, -7) - 1,
     gradient = mean(tail(ownership_adjusted_diff, -1)),
     .groups = "drop"
@@ -343,7 +343,7 @@ document.addEventListener('DOMContentLoaded', function() {
     update_plotly_plot_ownership(playerId);
     
   } else {
-    update_plotly_plot_ownership("1004592"); //Tim English
+    update_plotly_plot_ownership("1006130"); //Baily Smith
     
   };
   

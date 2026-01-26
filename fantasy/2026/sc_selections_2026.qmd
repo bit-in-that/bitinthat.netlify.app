@@ -1,0 +1,363 @@
+---
+title: "Supercoach Player Selections"
+execute:
+  echo: false
+  warning: false
+---
+
+<!-- TODO:
+Add the selections, the % of coaches who pick players as C or VC, bench, emergency etc.
+Add a plotly for number of coaches, completion % etc. 
+during the season adding up trades in and out to see how many people are actively playing
+-->
+
+
+
+```{r}
+
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(htmltools)
+library(purrr)
+library(reactable)
+library(tidyr)
+library(stringr)
+library(scales)
+
+```
+
+
+# Ownership over time
+
+## Plot
+
+```{r}
+player_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/2026/output/sc_player_data.parquet") |> 
+  mutate(
+    id,
+    # label = paste0(first_name, " ", last_name, " || ", position, " || $", comma(cost/1000), "K || ", team_name)
+    label = paste0(first_name, " ", last_name, " || ", position, " || $", comma(price/1000), "K")
+  )
+
+player_selections_plot <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/2026/output/sc_player_selections_long.parquet") |> 
+    mutate(
+      direction = if_else(ownership_adjusted_diff>0, "Daily Increase", "Daily Decrease"),
+      snapshot_label = "Snapshot"
+    ) |> 
+    left_join(player_data, by = "id") |> 
+    mutate(
+    snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney") - 1,
+    full_name = paste(first_name, last_name)
+  ) |> 
+  arrange(desc(price))
+  
+
+
+player_id_list <- player_selections_plot |>
+  distinct(id, .keep_all = TRUE) |>
+  with({
+    `names<-`(id, full_name)
+  })
+
+```
+
+<!-- TODO: Make the plot able to swap out the metric (adjusted versus official ownership) as well as the player. Or alternatively two sperate plots might be simpler. -->
+
+
+```{r}
+player_selections_plot |>
+  distinct(id, .keep_all = TRUE) |>
+  transmute(
+    id,
+    label
+  ) |> 
+  with({
+    map2(id, label, ~{
+      tags$option(value = .x, .y)
+    })
+  }) |> 
+  c(id = "player-select") |> 
+  do.call(what = tags$select) |> 
+  div(id = "select-container")
+
+
+```
+
+
+
+```{r}
+gg_ownership <- player_selections_plot |>
+  arrange(desc(price)) |> 
+  filter(
+    id == player_selections_plot$id[[1]]
+  ) |> 
+  ggplot(aes(x = snapshot_date, y = ownership_adjusted)) +
+  geom_col(aes(y = ownership_adjusted_diff, fill = direction)) +
+  geom_point(aes(y = ownership_adjusted_diff, colour = direction)) +
+  geom_line(aes(colour = "Snapshot")) +
+  geom_point(aes(colour = "Snapshot")) +
+  xlab("Snapshot Date (End of Day)") +
+  ylab("Owned by % (Adjusted)") +
+  scale_colour_manual(
+    name = "Legend",
+    values = c("Snapshot" = "#333333", "Daily Increase" = "#017720", "Daily Decrease" = "#AA0000")
+  ) +
+  scale_fill_manual(
+    name = "",
+    values = c("Daily Increase" = "green", "Daily Decrease" = "red")
+  ) +
+  # labs(title = "Player Name (Team), $000k (position)") + # add this later
+  labs(title = player_selections_plot$full_name[1]) + # add this later
+  theme_minimal()
+  
+# p_ownership <- ggplotly(gg_ownership) |> 
+#   # This was bit of a hack but it works!
+#   update_plotly_legend_labels(c("Daily Decrease", "Daily Increase", "Daily Decrease", "Daily Increase", "Snapshot"))
+p_ownership <- ggplotly(gg_ownership)
+
+# plotly_list <- plotly_build(p_ownership)
+
+for(index in seq_along(p_ownership$x$data)) {
+  original_name <- p_ownership$x$data[[index]]$name
+  p_ownership$x$data[[index]]$name <- str_remove_all(original_name, "^\\(|,\\d+\\)$")
+}
+
+p_ownership$elementId <- "plotly_plot_ownership"
+
+p_ownership
+```
+
+
+## Table
+
+<!-- Add a table in another table of people signed up and completed teams, could also be a plot maybe with two shaded regions -->
+
+::: {.panel-tabset}
+
+
+### Player Selections
+
+
+```{r}
+player_selections_table <- player_selections_plot |> 
+  group_by(
+    id, full_name
+  ) |> 
+  mutate(
+    days_ago = max(snapshot_date) - snapshot_date + 1
+  ) |> 
+  summarise(
+    ownership_max = max(ownership),
+    ownership_adjusted_max = max(ownership_adjusted),
+    ownership_adjusted_which_max = which.max(ownership_adjusted),
+    ownership_adjusted_max_date = snapshot_date[ownership_adjusted_which_max],
+    ownership = tail(ownership, 1),
+    ownership_adjusted_now = tail(ownership_adjusted, 1),
+    change_yesterday = tail(ownership_adjusted_diff, 1),
+    change_week = sum(tail(ownership_adjusted_diff, 7)),
+    change_which_max = which.max(abs(tail(ownership_adjusted_diff, -1)))[1] + 1,
+    change_max = ownership_adjusted_diff[change_which_max],
+    change_max_date = snapshot_date[change_which_max],
+    percent_change_yesterday =  last(ownership_adjusted) / nth(ownership_adjusted, -2) - 1,
+    percent_change_week =  last(ownership_adjusted) / nth(ownership_adjusted, -7) - 1,
+    gradient = mean(tail(ownership_adjusted_diff, -1)),
+    .groups = "drop"
+  ) |> 
+  select(-change_which_max, -ownership_adjusted_which_max) |>
+  relocate(ownership, ownership_adjusted_now, .after = "full_name") |> 
+  arrange(desc(ownership))
+
+
+player_selections_table |> 
+  reactable(
+    columns = list(
+      id = colDef(show = FALSE),
+      full_name = colDef(name = "Player", sticky = "left", cell = \(cell_value, row_index) {
+        id <- player_selections_table$id[[row_index]]
+        tags$a(cell_value, href = paste0("?playerid=", id, "#plot"))
+      }),
+      ownership = colDef(name = "Official"),
+      ownership_adjusted_now = colDef(name = "Adjusted", ),
+      ownership_max = colDef(name = "Official"),
+      ownership_adjusted_max = colDef(name = "Adjusted"),
+      ownership_adjusted_max_date = colDef(name = "Date", format = colFormat(date = TRUE)),
+      change_yesterday = colDef(name = "Yesterday", format = colFormat(digits = 2)),
+      change_week = colDef(name = "Past Week", format = colFormat(digits = 2)),
+      change_max = colDef(name = "Peak Day", format = colFormat(digits = 2)),
+      change_max_date = colDef(name = "Date", format = colFormat(date = TRUE)),
+      percent_change_yesterday = colDef(name = "Yesterday", format = colFormat(percent = TRUE, digits = 2)),
+      percent_change_week = colDef(name = "Past Week", format = colFormat(percent = TRUE, digits = 2)),
+      gradient = colDef(name = "Gradient", format = colFormat(digits = 5))
+    ),
+    columnGroups = list(
+      colGroup(name = "Current Ownership", columns = c("ownership", "ownership_adjusted_now")),
+      colGroup(name = "Peak Ownership", columns = c("ownership_max", "ownership_adjusted_max", "ownership_adjusted_max_date")),
+      colGroup(name = "Change in Adjusted Ownership", columns = c("change_yesterday", "change_week", "change_max", "change_max_date")),
+      colGroup(name = "% Change", columns = c("percent_change_yesterday", "percent_change_week"))
+    ),
+    filterable = TRUE
+  )
+
+
+
+
+```
+
+### Fantasy Coaches
+
+```{r}
+
+player_selections_plot |> 
+  group_by(snapshot_date) |> 
+  summarise(
+    completion_percentage = head(completion_percentage, 1),
+    .groups = "drop"
+  ) |>
+  arrange(desc(snapshot_date)) |> 
+  reactable(
+    columns = list(
+      snapshot_date = colDef(name  = "Date"),
+      completion_percentage = colDef(name = "Completion ", format = colFormat(percent = TRUE, digits = 1))
+    ),
+    filterable = TRUE
+  )
+
+
+```
+
+
+
+:::
+
+
+## Explanation
+
+When people look at the ownership percentages for AFL fantasy, they often wonder why the most selected players are all below 70%. The reason for this is that a lot of teams are either missing players or are entirely empty. Fortunately there is a solution to this, I have devised the following formula to calculate a player's true selected number:
+
+$$
+(\text{Adjusted \% Selected By}) = \frac{(\text{\% Selected By}) } { (\text{Overall Team Completion \%}) }
+$$
+
+where:
+
+$$
+(\text{Overall Team Completion \%}) = \frac{ \sum (\text{\# Selections})}{  30 \times (\text{\# Coaches}) }
+$$
+
+
+This is a rough approximation but it led to the most selected player (Harley Reid) being close to 100% at the beginning of the pre-season.
+
+
+### UPDATE: Auto-picks
+
+The selection numbers in the formulae above have also been adjusted further to remove auto-picks post 16^th^ of March 2024. The number of auto-picks are an estimate but appear to improve the previous results which didn't make much sense.
+
+
+
+```{=html}
+
+<!-- Linking Selectize CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/css/selectize.bootstrap3.min.css" rel="stylesheet" />
+
+
+<!-- JavaScript to Initialize Selectize -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/selectize.js/0.12.6/js/standalone/selectize.min.js"></script>
+<script>
+
+//var selectedDataset = document.getElementById('player-select').value;
+
+update_plotly_plot_ownership = function(player_id) {
+  if(!(player_id == '')) {
+  
+  fetch("json_data/sc_ownership_adjusted_plot_data/" + player_id + ".json")
+    .then(response => response.json())
+    .then(data_player => {
+      // Convert the data to the format Plotly expects
+      //console.log(data_player);
+      // Helper to find trace indices by name
+      function getTraceIndices(plotId, name) {
+        const plot = document.getElementById(plotId);
+        return plot.data
+          .map((trace, i) => trace.name === name ? i : -1)
+          .filter(i => i !== -1);
+      }
+      
+      const plotId = 'plotly_plot_ownership';
+      
+      // Snapshot (always present)
+      const snapshotIndices = getTraceIndices(plotId, 'Snapshot');
+      if (snapshotIndices.length) {
+        Plotly.restyle(plotId, {
+          x: [data_player['snapshot_x']],
+          y: [data_player['snapshot_y']],
+          text: [data_player['snapshot_text']]
+        }, snapshotIndices);
+      }
+      
+      // Daily Decrease (optional)
+      const decreaseIndices = getTraceIndices(plotId, 'Daily Decrease');
+      if (decreaseIndices.length) {
+        Plotly.restyle(plotId, {
+          x: [data_player['daily_decrease_x']],
+          y: [data_player['daily_decrease_y_abs']],
+          base: [data_player['daily_decrease_y']],
+          text: [data_player['daily_decrease_text']]
+        }, decreaseIndices);
+      }
+      
+      // Daily Increase (optional)
+      const increaseIndices = getTraceIndices(plotId, 'Daily Increase');
+      if (increaseIndices.length) {
+        Plotly.restyle(plotId, {
+          x: [data_player['daily_increase_x']],
+          y: [data_player['daily_increase_y']],
+          text: [data_player['daily_increase_text']]
+        }, increaseIndices);
+      }
+      
+      Plotly.relayout('plotly_plot_ownership', {
+        'title': data_player['label'][0],
+        'xaxis.autorange': true,
+        'yaxis.autorange': true,
+        'yaxis.dtick': data_player['tick_interval'][0]
+        
+      });
+
+      //console.log(document.getElementById('plotly_plot_ownership').data);
+  
+    });
+    }
+      
+
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Create a URLSearchParams instance from the current URL's query string
+  const queryParams = new URLSearchParams(window.location.search);
+  // Get the 'playerId' query parameter
+  const playerId = queryParams.get('playerid');
+
+  if(playerId) {
+    update_plotly_plot_ownership(playerId);
+    
+  } else {
+    update_plotly_plot_ownership("693"); //Bont
+    
+  };
+  
+
+  $('#player-select').selectize({
+    // options and callbacks here
+    onChange: function(value){
+      // console.log(value);
+      update_plotly_plot_ownership(value);
+    }
+    });
+  });
+</script>
+
+
+```
+
