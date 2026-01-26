@@ -6,6 +6,7 @@ library(jsonlite)
 library(scales)
 
 player_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/2026/output/player_data.parquet")
+player_selections_long <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/2026/output/player_selections_long.parquet")
 
 player_labels <- player_data |> 
   transmute(
@@ -14,7 +15,6 @@ player_labels <- player_data |>
     label = paste0(first_name, " ", last_name, " || ", position, " || $", comma(price/1000), "K")
   )
 
-player_selections_long <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/2026/output/player_selections_long.parquet")
 
 all_player_ids <- unique(player_selections_long$id)
 
