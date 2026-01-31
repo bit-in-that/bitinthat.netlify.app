@@ -48,7 +48,7 @@ jobs:
 
       - name: Run Script
         run: |
-          source("dev/af_jsonise_player_selections_2026.R", echo = TRUE)
+          source("dev/jsonise_player_selections_2026.R", echo = TRUE)
           source("dev/sc_jsonise_player_selections_2026.R", echo = TRUE)
         shell: Rscript {0}
 
