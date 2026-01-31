@@ -18,6 +18,8 @@ $link-color: cyan !default;
 $navbar-fg: white !default;
 $navbar-bg: #050505 !default;
 
+
+
 $navbar-dark-color:                 black !default;
 // $navbar-dark-hover-color:           $secondary !default;
 // $navbar-dark-active-color:          $secondary !default;
@@ -47,3 +49,9 @@ $navbar-dark-color:                 black !default;
     display: block;
     padding-bottom: 0.4em;
 }
+
+.nav-link.active {
+  color: $navbar-fg;
+}
+
+

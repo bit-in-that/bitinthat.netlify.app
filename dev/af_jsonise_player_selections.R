@@ -135,5 +135,5 @@ owned_by_adjusted_plot_data <- all_player_ids |>
   })
 
 system.time({
-  iwalk(owned_by_adjusted_plot_data,~ write_json(.x, paste0("fantasy/afl/json_data/owned_by_adjusted_plot_data/", .y, ".json")))
+  iwalk(owned_by_adjusted_plot_data,~ write_json(.x, paste0("ownership/json_data/af_adjusted_plot_data/", .y, ".json")))
 })

@@ -234,7 +234,8 @@ player_selections_plot |>
 
 ## Explanation
 
-When people look at the ownership percentages for AFL fantasy, they often wonder why the most selected players are all below 70%. The reason for this is that a lot of teams are either missing players or are entirely empty. Fortunately there is a solution to this, I have devised the following formula to calculate a player's true selected number:
+When people look at the ownership percentages for Supercoach, they often wonder why the most selected players are all below 70% (people usually assume this is because there are a lot of casual or autofill teams out there). The reason for this is that a lot of teams are either missing players or are entirely empty. Fortunately there is a solution to this, I have devised the following formula to calculate a player's true selected number:
+
 
 $$
 (\text{Adjusted \% Ownership}) = \frac{(\text{\% Ownership}) } { (\text{Overall Team Completion \%}) }
@@ -267,7 +268,7 @@ Note that this is a rough approximation but makes it easier to compare "apples w
 update_plotly_plot_ownership = function(player_id) {
   if(!(player_id == '')) {
   
-  fetch("json_data/sc_ownership_adjusted_plot_data/" + player_id + ".json")
+  fetch("json_data/sc_adjusted_plot_data/" + player_id + ".json")
     .then(response => response.json())
     .then(data_player => {
       // Convert the data to the format Plotly expects
@@ -295,9 +296,14 @@ update_plotly_plot_ownership = function(player_id) {
       // Daily Decrease (optional)
       const decreaseIndices = getTraceIndices(plotId, 'Daily Decrease');
       if (decreaseIndices.length) {
+        // Create new y array with every second index using daily_decrease_y
+        const yValues = data_player['daily_decrease_y_abs'].map((val, idx) => 
+          idx % 2 === 1 ? data_player['daily_decrease_y'][idx] : val
+        );
+        
         Plotly.restyle(plotId, {
           x: [data_player['daily_decrease_x']],
-          y: [data_player['daily_decrease_y_abs']],
+          y: [yValues],
           base: [data_player['daily_decrease_y']],
           text: [data_player['daily_decrease_text']]
         }, decreaseIndices);

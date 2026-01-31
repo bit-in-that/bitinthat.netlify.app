@@ -24,7 +24,7 @@ website:
   google-analytics: "G-G9BY8QESQF"
   back-to-top-navigation: true
 
-  favicon: assets/bitinthat-logo.png
+  favicon: assets/bitinthat-logo.jpg
   
   # repo-url: "https://github.com/t-gummer/t-gummer.netlify.app"
   # repo-branch: master
@@ -41,7 +41,7 @@ website:
   
   navbar:
 # https://icons.getbootstrap.com/?q=data
-    logo: assets/bitinthat-logo.png
+    logo: assets/bitinthat-logo.jpg
     search: true
     left: 
       - href: index.qmd
