@@ -92,6 +92,6 @@ ownership_adjusted_plot_data <- all_player_ids |>
   })
 
 system.time({
-  iwalk(ownership_adjusted_plot_data,~ write_json(.x, paste0("fantasy/2026/json_data/ownership_adjusted_plot_data/", .y, ".json")))
+  iwalk(ownership_adjusted_plot_data,~ write_json(.x, paste0("ownership/json_data/sc_adjusted_plot_data/", .y, ".json")))
 })
 
