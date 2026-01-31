@@ -8,8 +8,7 @@ project:
   output-dir: _site
   
   resources:
-    - "fantasy/afl/json_data/**"
-    - "fantasy/2026/json_data/**"
+    - "ownership/json_data/**"
     - "netlify.toml"
     - "_redirects"
   
@@ -21,7 +20,7 @@ project:
 
   
 website:
-  title: "bit in that"
+  title: "Bit In That"
   google-analytics: "G-G9BY8QESQF"
   back-to-top-navigation: true
 
@@ -51,37 +50,14 @@ website:
       # - href: index.qmd # have a page explaining some stuff, have most of the stuff hidden behind ::: darkModeOnly section
       #   text: Nerd Zone
       #   icon: eyeglasses
-      - text: Fantasy
+      - text: Fantasy ownership
         icon: magic
-        menu:
-          - text: "<b>AFL</b>"
-          - href: "fantasy/afl/top_coaches.qmd"
-            text: "Top Coaches"
-            icon: patch-check
-          - href: "fantasy/afl/selections.qmd"
-            text: "Player Selections"
-            icon: eyedropper
-          - text: "<b>AFLW</b>"
-          - href: "fantasy/aflw/top_coaches.qmd"
-            text: "Top Coaches"
-            icon: patch-check
-          - href: "fantasy/aflw/selections.qmd"
-            text: "Player Selections"
-            icon: eyedropper
-      - text: Players
+        href: "ownership/af.qmd"
+        
+      - text: Supercoach ownership
         icon: person
-        menu:
-          - text: "<b>AFL</b>"
-          - href: "players/afl/draft_prospects.qmd"
-            text: "Draft Prospects"
-            icon: egg
-          - text: "<b>AFLW</b>"
-          - href: "players/aflw/index.qmd"
-            text: "Player Data"
-            icon: card-list
-          - href: "players/aflw/draft_prospects.qmd"
-            text: "Draft Prospects"
-            icon: egg
+        href: "ownership/sc.qmd"
+        
     right:
       - icon: github
         href: https://github.com/bit-in-that
@@ -103,7 +79,7 @@ format:
     # link-external-icon: true
     link-external-newwindow: true
     theme:
-      light: [cosmo, assets/light.scss] # also known as normal mode
       dark: [cosmo, assets/dark.scss] # also known as dark mode
+      light: [cosmo, assets/light.scss] # also known as normal mode
     toc: true
 
