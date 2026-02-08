@@ -83,7 +83,7 @@ format:
     # link-external-icon: true
     link-external-newwindow: true
     theme:
-      dark: [cosmo, assets/dark.scss] # also known as dark mode
       light: [cosmo, assets/light.scss] # also known as normal mode
+      dark: [cosmo, assets/dark.scss] # also known as dark mode
     toc: true
 
