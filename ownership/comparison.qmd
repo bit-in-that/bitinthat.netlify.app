@@ -475,13 +475,30 @@ function updateComparisonPlot(playerIds) {
       });
     });
     
+    let titleParts = [`Top ${currentFilters.numPlayers} Players`];
+
+    // Add position filter to title
+    if (!currentFilters.positions.includes('all')) {
+      titleParts.push(`(${currentFilters.positions.join(', ')})`);
+    }
+    
+    // Add price range to title
+    if (currentFilters.priceRange !== 'all') {
+      const priceStr = currentFilters.priceRange.replace('-', 'K - ');
+      titleParts.push(`(${priceStr}K)`);
+    }
+    
     const layout = {
-      title: `Top ${currentFilters.numPlayers} Players by Adjusted Ownership`,
+      title: titleParts.join(' ') + ' by Adjusted Ownership',
       xaxis: { title: 'Snapshot Date (End of Day)' },
-      yaxis: { title: 'Owned by % (Adjusted)' },
+      yaxis: { 
+        title: 'Owned by % (Adjusted)',
+        range: [0,100]
+      },
       hovermode: 'closest',
       showlegend: true,
       legend: {
+        title: { text: 'Legend' },
         orientation: 'v',
         x: 1.02,
         xanchor: 'left',
@@ -491,7 +508,12 @@ function updateComparisonPlot(playerIds) {
       }
     };
     
-    Plotly.react('plotly_comparison', traces, layout);
+    const config = {
+      displayModeBar: true,
+      displaylogo: false
+    };
+    
+    Plotly.react('plotly_comparison', traces, layout, config);
     
   }).catch(error => {
     console.error('Error fetching comparison data:', error);
