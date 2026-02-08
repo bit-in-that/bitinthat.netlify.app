@@ -58,6 +58,10 @@ website:
         icon: person
         href: "ownership/sc.qmd"
         
+      - text: AF Compare Players
+        icon: eyeglasses
+        href: "ownership/comparison.qmd"
+        
     right:
       - icon: github
         href: https://github.com/bit-in-that
