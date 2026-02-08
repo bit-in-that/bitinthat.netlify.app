@@ -1,0 +1,545 @@
+---
+title: "AFL Fantasy Ownership Comparison"
+execute:
+  echo: false
+  warning: false
+---
+
+```{r}
+
+library(arrow)
+library(dplyr)
+library(ggplot2)
+library(plotly)
+library(htmltools)
+library(purrr)
+library(reactable)
+library(tidyr)
+library(stringr)
+library(scales)
+
+```
+
+
+# Top <span id="topn-page-heading">5</span> Players Comparison
+
+## Filters
+
+```{r}
+player_data <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/2026/output/player_data.parquet") |> 
+  mutate(
+    id,
+    label = paste0(first_name, " ", last_name, " || ", position, " || $", comma(price/1000), "K"),
+    # Create position flags
+    is_DEF = if_else(str_detect(position, "DEF"), 1, 0),
+    is_MID = if_else(str_detect(position, "MID"), 1, 0),
+    is_RUC = if_else(str_detect(position, "RUC"), 1, 0),
+    is_FWD = if_else(str_detect(position, "FWD"), 1, 0)
+  )
+
+player_selections_plot <- read_parquet("https://github.com/bit-in-that/data-automation/raw/main/2026/output/player_selections_long.parquet") |> 
+    mutate(
+      direction = if_else(ownership_adjusted_diff>0, "Daily Increase", "Daily Decrease"),
+      snapshot_label = "Snapshot"
+    ) |> 
+    left_join(player_data, by = "id") |> 
+    mutate(
+      snapshot_date = as.Date(snapshot_time, tz = "Australia/Sydney") - 1,
+      full_name = paste(first_name, last_name)
+    ) |> 
+    arrange(desc(price))
+
+# Get price range for defaults
+max_price <- max(player_data$price, na.rm = TRUE)
+min_price <- 0
+
+```
+
+```{r}
+# Create filter controls
+div(
+  class = "filter-container",
+  div(
+    class = "filter-group",
+    tags$label("Position:", style = "font-weight: bold; display: block; margin-bottom: 8px;"),
+    div(
+      class = "position-buttons",
+      tags$button("All", id = "btn-all", class = "position-btn active", onclick = "togglePosition('all')"),
+      tags$button("DEF", id = "btn-DEF", class = "position-btn", onclick = "togglePosition('DEF')"),
+      tags$button("MID", id = "btn-MID", class = "position-btn", onclick = "togglePosition('MID')"),
+      tags$button("RUC", id = "btn-RUC", class = "position-btn", onclick = "togglePosition('RUC')"),
+      tags$button("FWD", id = "btn-FWD", class = "position-btn", onclick = "togglePosition('FWD')")
+    )
+  ),
+  div(
+    class = "filter-group",
+    tags$label("Price Range:", style = "font-weight: bold; display: block; margin-bottom: 8px;"),
+      div(
+        class = "price-buttons",
+        tags$button("All", id = "btn-price-all", class = "price-btn active", onclick = "togglePrice('all')"),
+        tags$button("$230K - $350K", id = "btn-price-1", class = "price-btn", onclick = "togglePrice('230-350')"),
+        tags$button("$351K - $660K", id = "btn-price-2", class = "price-btn", onclick = "togglePrice('351-660')"),
+        tags$button("$661K - $830K", id = "btn-price-3", class = "price-btn", onclick = "togglePrice('661-830')"),
+        tags$button("$831K - $1030K", id = "btn-price-4", class = "price-btn", onclick = "togglePrice('831-1030')"),
+        tags$button("$1031K - $1250K", id = "btn-price-5", class = "price-btn", onclick = "togglePrice('1031-1250')")
+        )
+      ),
+  div(
+    class = "filter-group",
+    tags$label("Number of Players:", style = "font-weight: bold; display: block; margin-bottom: 8px;"),
+    tags$input(type = "number", id = "num-players", value = 5, min = 1, max = 10, step = 1, style = "width: 80px; padding: 6px; border: 1px solid #ced4da; border-radius: 4px;")
+  ),
+  div(
+    style = "margin-top: 15px;",
+    tags$button("Apply Filters", id = "apply-filters", class = "apply-btn", onclick = "applyFilters()")
+  )
+)
+```
+
+## Plot
+
+```{r}
+# Create initial plot with top 5 players by current ownership
+top_5_initial <- player_selections_plot |>
+  group_by(id) |>
+  filter(snapshot_date == max(snapshot_date)) |>
+  ungroup() |>
+  arrange(desc(ownership_adjusted)) |>
+  slice(1:5) |>
+  pull(id)
+
+gg_comparison <- player_selections_plot |>
+  filter(id %in% top_5_initial) |>
+  ggplot(aes(x = snapshot_date, y = ownership_adjusted, colour = full_name, group = full_name)) +
+  geom_line(linewidth = 1) +
+  geom_point(size = 2) +
+  xlab("Snapshot Date (End of Day)") +
+  ylab("Owned by % (Adjusted)") +
+  labs(title = "Top 5 Players by Adjusted Ownership") +
+  scale_colour_discrete(name = "Player") +
+  theme_minimal() +
+  theme(
+    legend.position = "right"
+  )
+
+p_comparison <- ggplotly(gg_comparison)
+
+# Clean up legend labels
+for(index in seq_along(p_comparison$x$data)) {
+  original_name <- p_comparison$x$data[[index]]$name
+  p_comparison$x$data[[index]]$name <- str_remove_all(original_name, "^\\(|,\\d+\\)$")
+}
+
+p_comparison$elementId <- "plotly_comparison"
+
+p_comparison
+```
+
+
+## Table
+
+::: {.panel-tabset}
+
+### <span id="topn-tab-label">Top 5 Players</span>
+
+```{r}
+player_selections_table <- player_selections_plot |> 
+  group_by(
+    id, full_name, position, price, is_DEF, is_MID, is_RUC, is_FWD
+  ) |> 
+  mutate(
+    days_ago = max(snapshot_date) - snapshot_date + 1
+  ) |> 
+  summarise(
+    ownership_max = max(ownership),
+    ownership_adjusted_max = max(ownership_adjusted),
+    ownership_adjusted_which_max = which.max(ownership_adjusted),
+    ownership_adjusted_max_date = snapshot_date[ownership_adjusted_which_max],
+    ownership = tail(ownership, 1),
+    ownership_adjusted_now = tail(ownership_adjusted, 1),
+    change_yesterday = tail(ownership_adjusted_diff, 1),
+    change_week = sum(tail(ownership_adjusted_diff, 7)),
+    change_which_max = which.max(abs(tail(ownership_adjusted_diff, -1)))[1] + 1,
+    change_max = ownership_adjusted_diff[change_which_max],
+    change_max_date = snapshot_date[change_which_max],
+    percent_change_yesterday =  last(ownership_adjusted) / nth(ownership_adjusted, -2) - 1,
+    percent_change_week =  last(ownership_adjusted) / nth(ownership_adjusted, -7) - 1,
+    gradient = mean(tail(ownership_adjusted_diff, -1)),
+    .groups = "drop"
+  ) |> 
+  select(-change_which_max, -ownership_adjusted_which_max) |>
+  relocate(ownership, ownership_adjusted_now, .after = "full_name") |> 
+  arrange(desc(ownership_adjusted_now))
+
+# Create a div that will be updated by JavaScript
+div(id = "top5-table-container")
+
+# Store the full table data as JSON for JavaScript to use
+tags$script(HTML(paste0(
+  "window.fullTableData = ", 
+  jsonlite::toJSON(player_selections_table, dataframe = "rows"),
+  ";"
+)))
+```
+
+:::
+
+## Explanation
+
+This page shows the **Top <span id="topn-explainer">5</span> players** by adjusted ownership percentage that match your selected filters.
+
+You can filter by:
+- **Position**: Select one or more positions (DEF, MID, RUC, FWD). Players with dual positions (DPP) will appear if either position is selected.
+- **Price Range**: Set minimum and maximum price thresholds.
+
+The adjusted ownership percentage formula remains the same:
+
+$$
+(\text{Adjusted \% Ownership}) = \frac{(\text{\% Ownership}) } { (\text{Overall Team Completion \%}) }
+$$
+
+where:
+
+$$
+(\text{Overall Team Completion \%}) = \frac{ \sum ( \text{\% Ownership})}{  30 }
+$$
+
+
+```{=html}
+
+<style>
+.filter-container {
+  background: #f8f9fa;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  border: 1px solid #dee2e6;
+}
+
+.filter-group {
+  margin-bottom: 15px;
+}
+
+.position-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.position-btn {
+  padding: 8px 16px;
+  border: 2px solid #007bff;
+  background: white;
+  color: #007bff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.position-btn:hover {
+  background: #e7f3ff;
+}
+
+.position-btn.active {
+  background: #007bff;
+  color: white;
+}
+
+.price-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.price-btn {
+  padding: 8px 16px;
+  border: 2px solid #17a2b8;
+  background: white;
+  color: #17a2b8;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.price-btn:hover {
+  background: #e7f7f9;
+}
+
+.price-btn.active {
+  background: #17a2b8;
+  color: white;
+}
+
+.apply-btn {
+  padding: 10px 24px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.apply-btn:hover {
+  background: #218838;
+}
+
+.price-inputs input {
+  padding: 6px;
+  border: 1px solid #ced4da;
+  border-radius: 4px;
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reactable/0.4.4/reactable.min.js"></script>
+
+<script>
+
+// Store current filter state
+let currentFilters = {
+  positions: ['all'],
+  priceRange: 'all',
+  numPlayers: 5
+};
+
+// Toggle position filter
+function togglePosition(position) {
+  const btn = document.getElementById('btn-' + position);
+  
+  if (position === 'all') {
+    // Deselect all other positions
+    document.querySelectorAll('.position-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilters.positions = ['all'];
+  } else {
+    // Deselect "All" button
+    document.getElementById('btn-all').classList.remove('active');
+    
+    // Toggle this position
+    if (btn.classList.contains('active')) {
+      btn.classList.remove('active');
+      currentFilters.positions = currentFilters.positions.filter(p => p !== position);
+    } else {
+      btn.classList.add('active');
+      currentFilters.positions.push(position);
+    }
+    
+    // If no positions selected, select "All"
+    if (currentFilters.positions.length === 0 || 
+        (currentFilters.positions.length === 1 && currentFilters.positions[0] === 'all')) {
+      document.getElementById('btn-all').classList.add('active');
+      currentFilters.positions = ['all'];
+    } else {
+      // Remove 'all' if it's still in there
+      currentFilters.positions = currentFilters.positions.filter(p => p !== 'all');
+    }
+  }
+}
+
+// Toggle price filter
+function togglePrice(priceRange) {
+  // Deselect all price buttons
+  document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
+  
+  // Activate the correct button based on priceRange value
+  if (priceRange === 'all') {
+    document.getElementById('btn-price-all').classList.add('active');
+  } else if (priceRange === '230-350') {
+    document.getElementById('btn-price-1').classList.add('active');
+  } else if (priceRange === '351-660') {
+    document.getElementById('btn-price-2').classList.add('active');
+  } else if (priceRange === '661-830') {
+    document.getElementById('btn-price-3').classList.add('active');
+  } else if (priceRange === '831-1030') {
+    document.getElementById('btn-price-4').classList.add('active');
+  } else if (priceRange === '1031-1250') {
+    document.getElementById('btn-price-5').classList.add('active');
+  }
+  
+  currentFilters.priceRange = priceRange;
+}
+
+// Apply filters and update plot
+function applyFilters() {
+  // Get number of players
+  const numPlayers = parseInt(document.getElementById('num-players').value) || 5;
+  currentFilters.numPlayers = Math.min(Math.max(numPlayers, 1), 10); // Clamp between 1 and 10
+  
+  document.getElementById('topn-tab-label').textContent = `Top ${currentFilters.numPlayers} Players`;
+  document.getElementById('topn-explainer').textContent = currentFilters.numPlayers;
+  document.querySelectorAll('#topn-page-heading').forEach(el => {
+    el.textContent = currentFilters.numPlayers;
+  });
+  
+  // Parse price range
+  let minPrice = 0;
+  let maxPrice = Infinity;
+  
+  if (currentFilters.priceRange !== 'all') {
+    const [min, max] = currentFilters.priceRange.split('-').map(p => parseFloat(p) * 1000);
+    minPrice = min;
+    maxPrice = max;
+  }
+  
+  // Filter the data
+  let filteredData = window.fullTableData.filter(player => {
+    // Check price
+    if (player.price < minPrice || player.price > maxPrice) {
+      return false;
+    }
+    
+    // Check position
+    if (currentFilters.positions.includes('all')) {
+      return true;
+    }
+    
+    // Check if player matches any selected position
+    for (let pos of currentFilters.positions) {
+      if (pos === 'DEF' && player.is_DEF === 1) return true;
+      if (pos === 'MID' && player.is_MID === 1) return true;
+      if (pos === 'RUC' && player.is_RUC === 1) return true;
+      if (pos === 'FWD' && player.is_FWD === 1) return true;
+    }
+    
+    return false;
+  });
+  
+  // Sort by current adjusted ownership and get top 5
+   filteredData.sort((a, b) => b.ownership_adjusted_now - a.ownership_adjusted_now);
+  const topN = filteredData.slice(0, currentFilters.numPlayers);
+  
+  // Get player IDs
+  const topNIds = topN.map(p => p.id);
+  
+  // Update the plot
+  updateComparisonPlot(topNIds);
+  
+  // Update the top N table
+  updateTopNTable(topN);
+}
+
+// Update the comparison plot
+function updateComparisonPlot(playerIds) {
+  if (!playerIds || playerIds.length === 0) {
+    return;
+  }
+  
+  // Fetch data for all selected players
+  const fetchPromises = playerIds.map(playerId => 
+    fetch("json_data/af_adjusted_plot_data/" + playerId + ".json")
+      .then(response => response.json())
+  );
+  
+  Promise.all(fetchPromises).then(dataArray => {
+    const traces = [];
+    
+    dataArray.forEach((data, index) => {
+      const playerId = playerIds[index];
+      const playerName = data.label[0].split('||')[0].trim();
+      
+      // Convert numeric dates to actual dates
+      // Excel/R date origin is 1899-12-30, so we need to convert
+      const convertToDate = (numericDate) => {
+        const unixEpoch = new Date(1970, 0, 1); // January 1, 1970
+        const millisPerDay = 24 * 60 * 60 * 1000;
+        return new Date(unixEpoch.getTime() + numericDate * millisPerDay);
+      };
+      
+      const dates = data.snapshot_x.map(convertToDate);
+      
+      // Create custom hover text
+      const hoverText = dates.map((date, i) => {
+        const dateStr = date.toLocaleDateString('en-AU', { 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        });
+        return `${playerName}<br>Date: ${dateStr}<br>Adjusted Ownership: ${data.snapshot_y[i].toFixed(2)}%`;
+      });
+      
+      // Add line trace for this player
+      traces.push({
+        x: dates,
+        y: data.snapshot_y,
+        mode: 'lines+markers',
+        name: playerName,
+        type: 'scatter',
+        line: { width: 3 },
+        marker: { size: 6 },
+        text: hoverText,
+        hovertemplate: '%{text}<extra></extra>'
+      });
+    });
+    
+    const layout = {
+      title: `Top ${currentFilters.numPlayers} Players by Adjusted Ownership`,
+      xaxis: { title: 'Snapshot Date (End of Day)' },
+      yaxis: { title: 'Owned by % (Adjusted)' },
+      hovermode: 'closest',
+      showlegend: true,
+      legend: {
+        orientation: 'v',
+        x: 1.02,
+        xanchor: 'left',
+        y: 1,
+        yanchor: 'top',
+        font: { size: 10 }
+      }
+    };
+    
+    Plotly.react('plotly_comparison', traces, layout);
+    
+  }).catch(error => {
+    console.error('Error fetching comparison data:', error);
+  });
+}
+
+// Update the Top 5 table
+function updateTopNTable(topNData) {
+  const tableHtml = `
+    <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+      <thead>
+        <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+          <th style="padding: 12px; text-align: left;">Player</th>
+          <th style="padding: 12px; text-align: left;">Position</th>
+          <th style="padding: 12px; text-align: right;">Price</th>
+          <th style="padding: 12px; text-align: right;">Current Ownership</th>
+          <th style="padding: 12px; text-align: right;">Change (Week)</th>
+          <th style="padding: 12px; text-align: right;">% Change (Week)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${topNData.map((player, idx) => `
+          <tr style="border-bottom: 1px solid #dee2e6; ${idx % 2 === 0 ? 'background: #f8f9fa;' : ''}">
+            <td style="padding: 10px;">${player.full_name}</td>
+            <td style="padding: 10px;">${player.position}</td>
+            <td style="padding: 10px; text-align: right;">$${player.price.toLocaleString()}</td>
+            <td style="padding: 10px; text-align: right;">${player.ownership_adjusted_now.toFixed(2)}%</td>
+            <td style="padding: 10px; text-align: right; color: ${player.change_week >= 0 ? 'green' : 'red'};">
+              ${player.change_week >= 0 ? '+' : ''}${player.change_week.toFixed(2)}%
+            </td>
+            <td style="padding: 10px; text-align: right; color: ${player.percent_change_week >= 0 ? 'green' : 'red'};">
+              ${player.percent_change_week >= 0 ? '+' : ''}${(player.percent_change_week * 100).toFixed(2)}%
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+  
+  document.getElementById('top5-table-container').innerHTML = tableHtml;
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+  // Apply initial filters to show default top 5
+  applyFilters();
+});
+
+</script>
+
+```
