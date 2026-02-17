@@ -295,15 +295,10 @@ update_plotly_plot_ownership = function(player_id) {
       // Daily Decrease (optional)
       const decreaseIndices = getTraceIndices(plotId, 'Daily Decrease');
       if (decreaseIndices.length) {
-        // Create new y array with every second index using daily_decrease_y
-        const yValues = data_player['daily_decrease_y_abs'].map((val, idx) => 
-          idx % 2 === 1 ? data_player['daily_decrease_y'][idx] : val
-        );
-        
         Plotly.restyle(plotId, {
           x: [data_player['daily_decrease_x']],
-          y: [yValues],
-          base: [data_player['daily_decrease_y']],
+          y: [data_player['daily_decrease_y']],
+          base: [data_player['daily_decrease_x'].map(() => 0)],  // reset base to zeros
           text: [data_player['daily_decrease_text']]
         }, decreaseIndices);
       }
