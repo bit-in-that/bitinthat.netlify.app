@@ -11,6 +11,7 @@ project:
     - "ownership/json_data/**"
     - "netlify.toml"
     - "_redirects"
+    - "assets/**"
   
   preview: 
     port: 22222
@@ -61,6 +62,12 @@ website:
       - text: AF Compare Players
         icon: eyeglasses
         href: "ownership/comparison.qmd"
+        
+      - text: Articles
+        icon: newspaper
+        menu:
+          - text: "AFL Fantasy Pricing Explained"
+            href: "articles/afl_fantasy_pricing.qmd"
         
     right:
       - icon: github

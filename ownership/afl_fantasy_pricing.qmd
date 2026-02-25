@@ -1,0 +1,285 @@
+---
+title: "AFL Fantasy Pricing Explained"
+---
+
+```{=html}
+<style>
+  .article-meta {
+    color: #666;
+    font-style: italic;
+    margin-bottom: 1.5rem;
+  }
+  .mm-paywall {
+    text-align: center;
+    margin: 2rem 0;
+  }
+  .mm-paywall img {
+    max-width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+  }
+  .equation-block {
+    text-align: center;
+    margin: 1.5rem 0;
+    font-style: italic;
+  }
+  .key-point {
+    background: #f8f9fa;
+    border-left: 4px solid #c8102e;
+    padding: 1rem 1.2rem;
+    margin: 1.5rem 0;
+    border-radius: 0 4px 4px 0;
+  }
+</style>
+```
+
+::: {.article-meta}
+Written by Bit in That — 17/02/2026
+
+Here is a link to [Moreira's Magic](https://moreirasmagic.com.au/), where you can find a podcast where I sat down with Selby and explained this article in a bit more detail.
+:::
+
+---
+
+## TLDR
+
+AFL Fantasy prices are easier to understand in Fantasy points rather than dollars. The magic number converts a player's price to a "priced at" value. The magic number then moves after each round based on how the competition scores in aggregate.
+
+---
+
+## Magic Number
+
+What exactly is the "magic number"?
+
+It **converts a player's price from dollars into an AFL Fantasy points metric**, using the formula below:
+
+::: {.equation-block}
+**Equation 1 — "Priced at" Formula**
+
+*Priced at~r~ = Price~r~ / Magic Number~r~ | for Round r*
+:::
+
+### Example
+
+For the upcoming year (2026), the starting magic number is **10,490**. Initially, the most expensive player in the game is Bailey Smith, who has a price tag of $1,220,000.
+
+::: {.equation-block}
+*Bailey Smith Initial "Priced at" = $1,220,000 / 10,490 = **116.3***
+:::
+
+Therefore his price is the equivalent of 116.3 AFL Fantasy points. This is because he is "priced at" his 2025 average output of 116.3, with no discount applied. For more information on how starting players' prices are derived, including rookie pricing and discounts, see the [AFL.com.au article here](https://www.afl.com.au/news/1459321/revealed-fantasy-salary-cap-top-prices-bargain-buys).
+
+The table below provides a basic summary of how starting prices are set:
+
+::: {.mm-paywall}
+*Table 1 — Breakdown of Initial Pricing.*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+---
+
+## How do you calculate the magic number for a given round?
+
+**The magic number changes after every round to ensure that the total price changes for a given round sum to 0.** In other words, for every price rise, there must be an equivalent price fall elsewhere in aggregate (minor rounding aside).
+
+The magic number for a given Round r can be calculated using the formula below:
+
+::: {.equation-block}
+**Equation 2 — Magic Number for Round r**
+
+*Magic Number~r~ = Σ prices~r~ / Σ weighted avg scores~r~ | for all players who played in Round r*
+:::
+
+**Numerator — Σ prices~r~:** Sum of the prices of all players who played in Round r.
+
+**Denominator — Σ weighted avg scores~r~:** Sum of the weighted average scores (season rolling average) for all players who played in Round r.
+
+The change in magic number from round to round can be explained by the change in the numerator and denominator of the above equation. As mentioned above, the aggregate change in total prices from round to round is approximately 0, and hence the numerator of the equation does not change from round to round.
+
+As a result, movements in the magic number from round to round can be explained by the aggregate movement in weighted average scores from round to round (which is a player's rolling season average).
+
+Before the season starts, players do not yet have a weighted average score. However, prices are known (as is the starting magic number). Using the Bailey Smith example, you can calculate every player's "priced at" value. The first change in the magic number is driven by the scores in round 1 (and now round 0) relative to the initial "priced at" values.
+
+If players, in aggregate, score more than the aggregate "priced at" numbers, the denominator increases in a relative sense and the magic number falls. The opposite is also true: if, in aggregate, players score less than their aggregate "priced at", the magic number rises.
+
+---
+
+## Historical Trends of Magic Numbers
+
+Using historical price and scoring data from Footywire, past magic numbers can be solved by round and season. The chart below shows a consistent pattern:
+
+- The trend is **downwards**.
+- The sharpest downwards change occurs in the **early rounds**.
+- The curve **generally flattens** as the season progresses.
+
+::: {.mm-paywall}
+*Figure 1 — Magic Numbers Standardised to 10490 by Round split by Season.*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+### Why does this occur?
+
+This trend is driven by cheaply priced players, most of whom are rookies who have never played before, or discounted players. **It is easier for these players to outperform their low "priced at" values.** Assuming all else is equal, this increases the denominator of Equation 2 relative to the initial "priced at" values and decreases the magic number. The historical trend therefore makes logical sense.
+
+---
+
+## What happened in 2021, 2022 and 2024?
+
+In 2021, 2022 and 2024, the magic number increased after Round 1. In those seasons, Round 1 scoring was lower on average than the respective "priced at" values, which pushes the magic number up.
+
+::: {.mm-paywall}
+*Table 2 — Breakdown of Scoring vs "Priced at" by Season for Round 1*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+Notable takeaways:
+
+- There was a major shift in 2021, with both the average "priced at" value and average scoring decreasing.
+- The sub rule returned in 2021, and the flow on effect was that players scored less on average due to lower time on ground (TOG) on average.
+- The additional player (sub) per team was typically priced cheaply, which pulled down the average "priced at" number.
+- In 2021, the decline in scoring was larger than the decline in "priced at", meaning the difference became negative, which pushed the magic number up after Round 1.
+
+::: {.mm-paywall}
+*Example 1 — 2021 Round 1 Examples of Scoring vs "Priced at"*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+---
+
+## So what does this mean for 2026 with the sub rule gone?
+
+There is still a fixed TOG pool to distribute. With 18 players on field: 18 × 100% = 1,800% total TOG share across 23 players.
+
+::: {.equation-block}
+*1800% / 23 = **78.3% average TOG per player***
+:::
+
+The chart below shows how TOG is distributed across the AFL, with the far right representing the lowest TOG players — often the subbed off (avg 53%) and subbed on (avg 25%).
+
+::: {.mm-paywall}
+*Figure 2 — Average TOG by ranked TOG per Game in 2025*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+Looking ahead, the most logical expectation is:
+
+- Players who were previously sub-affected should gain TOG relative to 2025.
+- That TOG must be taken from somewhere else.
+- The increase in scoring from formerly sub-affected players should be offset by reductions elsewhere.
+- As a result, the magic number should not be materially affected.
+
+---
+
+## Price Changes Examples
+
+Here is an example of how prices change using Bailey Smith (2026), priced at $1,220,000 ("priced at": 116.3).
+
+If he averages 116 over the first 10 rounds of 2026 *(assuming the magic number moves in line with historical experience)*, he will be "priced at" 117 at the end of Round 10. However, he will lose **$52,000**.
+
+::: {.mm-paywall}
+*Table 3 — Bailey Smith 2026 Price Projector*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+- He will lose value in dollars by Round 10, unless he averages **122 or more**.
+- If he gets tagged in one of these games and scores 70, he would need to average **128** in the other nine games to have not lost any actual price by Round 10.
+
+This highlights the idea of selecting players of value. With the uber premiums, it is very hard for them to increase in dollar value as they need to outperform their lofty "priced at" value. As a result, it is often better to not start these players, but rather trade them in later, after they have dropped in dollars.
+
+---
+
+## Tom Mitchell (Titch) 2018
+
+Going into the season Titch was "priced at" 127 based off his 2017 average. He comes out with 156, 137 and 148 in the first three rounds, going up $45,000 over these first three rounds — his "priced at" jumps from 127 to 137.
+
+He then proves exactly why you should not pay up for these uber premiums. Two scores in the 80s saw him drop $66,000 in the next two weeks. Combine that with a 58 in Round 8, and his price continues to drop. By Round 10 he's dropped $117,000.
+
+With the benefit of hindsight, the best play would have been to wait until he came down in price and buy him at the lower price. However this is easier said than done.
+
+::: {.mm-paywall}
+*Table 4 — Tom Mitchell 2018 AFL Fantasy Statistics*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+---
+
+## Top 10 Initially Most Expensive Players
+
+Taking the Titch example, we can apply it to the top 10 initially most expensive players for each season and view how their prices move, on average, throughout a season.
+
+::: {.mm-paywall}
+*Figure 4 — Average Top 10 Starting Priced Player's Price by Round split by Season*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+The average initial "priced at" number for the top 10 is different from season to season. The figure above has been converted to 2026 raw dollars. 2018 is at the top due to very highly "priced at" numbers.
+
+::: {.mm-paywall}
+*Table 5 — 2018 Top 10 Initially Most Expensive Players (2018 dollars)*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+The trend is quite clear. These "uber premiums" trend down in price throughout the season. The average price decrease (in 2026 dollars) is **$95,000 by Round 6** and **$160,000 by Round 23**. This is due to the way the pricing structure works. As new rookies outperform their "priced at" value, the uber premiums would also need to outperform their "priced at" value to not lose dollar value. With role changes, injuries, and changes in game style, it is very hard to do this — the trend is therefore consistently downward sloping.
+
+---
+
+## So What?
+
+::: {.key-point}
+- The **opening market is typically underpriced in aggregate**. Each season, rookies and discounted players replace retirees and delisted players, which drags down the average starting "priced at".
+- As those cheap players outperform their initial "priced at" value in the early rounds, the magic number naturally trends down.
+- As the magic number falls, uber premiums often lose dollars, because they must outperform a very high "priced at" just to hold dollar value.
+- With the trade volume available (50 in 2025), an optimal strategy is to start players of value (lower "priced at" relative to role and upside), **use these players to help generate cash, and then trade into uber premiums after they drop in price**.
+- Rookies are usually the best value, but an all rookie team would not be optimal, as scoring points is still what matters at the end of the day. **The goal is a balanced starting squad that maximises points and value generation.**
+:::
+
+---
+
+## What's next?
+
+If you liked this article, I will be writing another one on what the top coaches did last year, which will outline the initial ownership, trades and team value of the final top 1000, 100 and 10 for each round. This article will be available for Moreira's Magic subscribers and will be ongoing throughout the season.
+
+This will show you who they started (how many players did they have who played in opening round, how many rookies did they start, etc). Then also doing a deep dive into their trading philosophy and how their team value grew over the season.
+
+Also, a quick shoutout to Selby and Moreira's Magic. I am rapt to be working together this year, with a lot of exciting new data additions. If you liked the Bailey Smith price projections, with a Moreira's Magic subscription we have a price projector where you can play around with different projections for each player. Any feedback is warmly welcome, please DM us on X, [\@bitinthat](https://x.com/bitinthat).
+
+---
+
+## Appendices
+
+### Appendix A.1 — Bailey Smith 2026 Price Projector (Avg 122)
+
+::: {.mm-paywall}
+*Appendix A.1 — Bailey Smith 2026 Price Projector (Avg 122)*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+### Appendix A.2 — Bailey Smith 2026 Price Projector (Avg 128 with a 70 game)
+
+::: {.mm-paywall}
+*Appendix A.2 — Bailey Smith 2026 Price Projector (Avg 128 with a 70 game)*
+
+[![Subscribe to Moreira's Magic for full access](/assets/MM.jpg)](https://moreirasmagic.com.au/)
+:::
+
+---
+
+## References
+
+Wong, D. (2019, May 26). *How AFL Fantasy Pricing Works (Part 2): Understanding the behaviour of the AFL Fantasy pricing mechanism.* Medium. [https://denisewong1.medium.com/how-afl-fantasy-pricing-works-part-2-bca9b6685d69](https://denisewong1.medium.com/how-afl-fantasy-pricing-works-part-2-bca9b6685d69)
+
+Warnie. (2025, December 8). *REVEALED: Fantasy salary cap, top prices, bargain buys.* AFL.com.au. [https://www.afl.com.au/news/1459321/revealed-fantasy-salary-cap-top-prices-bargain-buys](https://www.afl.com.au/news/1459321/revealed-fantasy-salary-cap-top-prices-bargain-buys)
+
+FootyWire. (n.d.). *AFL Fantasy Prices.* FootyWire. Retrieved January 20, 2026, from [https://www.footywire.com/afl/footy/dream_team_prices](https://www.footywire.com/afl/footy/dream_team_prices)
+
+FootyWire. (n.d.). *AFL Fantasy Scores.* FootyWire. Retrieved January 20, 2026, from [https://www.footywire.com/afl/footy/dream_team_scores](https://www.footywire.com/afl/footy/dream_team_scores)
