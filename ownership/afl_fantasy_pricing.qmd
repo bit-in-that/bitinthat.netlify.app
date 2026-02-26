@@ -56,7 +56,7 @@ It **converts a player's price from dollars into an AFL Fantasy points metric**,
 ::: {.equation-block}
 **Equation 1 — "Priced at" Formula**
 
-*Priced at~r~ = Price~r~ / Magic Number~r~ | for Round r*
+$$\text{Priced at}_r = \frac{\text{Price}_r}{\text{Magic Number}_r} \quad \text{for Round } r$$
 :::
 
 ### Example
@@ -64,7 +64,9 @@ It **converts a player's price from dollars into an AFL Fantasy points metric**,
 For the upcoming year (2026), the starting magic number is **10,490**. Initially, the most expensive player in the game is Bailey Smith, who has a price tag of $1,220,000.
 
 ::: {.equation-block}
-*Bailey Smith Initial "Priced at" = $1,220,000 / 10,490 = **116.3***
+
+$$\text{Bailey Smith Initial "Priced at"} = \frac{1{,}220{,}000}{10{,}490} = \mathbf{116.3}$$
+
 :::
 
 Therefore his price is the equivalent of 116.3 AFL Fantasy points. This is because he is "priced at" his 2025 average output of 116.3, with no discount applied. For more information on how starting players' prices are derived, including rookie pricing and discounts, see the [AFL.com.au article here](https://www.afl.com.au/news/1459321/revealed-fantasy-salary-cap-top-prices-bargain-buys).
@@ -88,7 +90,7 @@ The magic number for a given Round r can be calculated using the formula below:
 ::: {.equation-block}
 **Equation 2 — Magic Number for Round r**
 
-*Magic Number~r~ = Σ prices~r~ / Σ weighted avg scores~r~ | for all players who played in Round r*
+$$\text{Magic Number}_r = \frac{\sum \text{prices}_r}{\sum \text{weighted avg scores}_r} \quad \text{for all players who played in Round } r$$
 :::
 
 **Numerator — Σ prices~r~:** Sum of the prices of all players who played in Round r.
@@ -155,7 +157,7 @@ Notable takeaways:
 There is still a fixed TOG pool to distribute. With 18 players on field: 18 × 100% = 1,800% total TOG share across 23 players.
 
 ::: {.equation-block}
-*1800% / 23 = **78.3% average TOG per player***
+$$\frac{1800\%}{23} = \mathbf{78.3\%} \text{ average TOG per player}$$
 :::
 
 The chart below shows how TOG is distributed across the AFL, with the far right representing the lowest TOG players — often the subbed off (avg 53%) and subbed on (avg 25%).

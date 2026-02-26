@@ -67,7 +67,7 @@ website:
         icon: newspaper
         menu:
           - text: "AFL Fantasy Pricing Explained"
-            href: "articles/afl_fantasy_pricing.qmd"
+            href: "ownership/afl_fantasy_pricing.qmd"
         
     right:
       - icon: github
