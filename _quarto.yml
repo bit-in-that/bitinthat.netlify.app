@@ -51,6 +51,10 @@ website:
       # - href: index.qmd # have a page explaining some stuff, have most of the stuff hidden behind ::: darkModeOnly section
       #   text: Nerd Zone
       #   icon: eyeglasses
+      - text: R1 price changes
+        icon: piggy-bank-fill
+        href: "pricing/af_price_changes_r1.qmd"
+        
       - text: Fantasy ownership
         icon: magic
         href: "ownership/af.qmd"
