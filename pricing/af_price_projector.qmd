@@ -1,0 +1,808 @@
+---
+title: "AFL Fantasy Price Projector"
+author: "BitInThat"
+date: today
+draft: false
+engine: knitr
+format:
+  html:
+    page-layout: full
+    toc: true
+    toc-depth: 2
+execute:
+  echo: false
+  warning: false
+  message: false
+---
+
+```{r setup}
+#| include: false
+library(arrow)
+library(dplyr)
+library(jsonlite)
+library(purrr)
+
+# ── Constants (must match your R pricing script) ──────────────────────────────
+MAGIC_NUMBER_PRESEASON <- 10490
+BASEMENT_PRICE        <- 230000
+PRICING_CHANGE_COMMON_FACTOR <- 0.25
+SCORE_HISTORY_COUNT_CAP <- 5L
+ROUNDING_PRECISION    <- -3   # thousands
+
+# ── Pricing parameters table (weights) ───────────────────────────────────────
+pricing_parameters <- tibble(score_count = SCORE_HISTORY_COUNT_CAP:1L) |>
+  mutate(
+    weight  = score_count / sum(score_count),
+    weights = map(score_count, ~head(weight, n = .x)),
+    price_change_factor = PRICING_CHANGE_COMMON_FACTOR * map_dbl(weights, sum),
+    weights_breakeven   = map(weights, tail, n = -1),
+    breakeven_factor    = map_dbl(weights_breakeven, sum) / head(weight, 1)
+  )
+
+# ── 2026 bye schedule (rounds teams have byes) ────────────────────────────────
+bye_schedule <- list(
+  "Round 0"  = c("ESS","PTA","RIC","ADE","FRE","MEL","WCE","NTH"),
+  "Round 2"  = c("CAR","COL","BRL","GEE"),
+  "Round 3"  = c("HAW","GCS","WBD","SYD"),
+  "Round 4"  = c("STK","GWS")
+)
+
+# Invert: team -> bye round number
+team_bye <- list()
+for (rnd_name in names(bye_schedule)) {
+  rnd_num <- as.integer(gsub("Round ", "", rnd_name))
+  for (team in bye_schedule[[rnd_name]]) {
+    team_bye[[team]] <- rnd_num
+  }
+}
+
+# ── Load player data ──────────────────────────────────────────────────────────
+players_raw <- data.table::fread("https://github.com/bit-in-that/data-automation/raw/main/2026/output/afl_fantasy_breakevens.csv")
+
+# ── Magic number (use pre-season as fallback) ─────────────────────────────────
+magic_number <- tryCatch({
+  # Try to derive from player data
+  if (!is.null(players_raw) && "r0_score" %in% names(players_raw)) {
+    played <- players_raw |> filter(!is.na(r0_score))
+    if (nrow(played) > 0) {
+      sum(played$hidden_price, na.rm = TRUE) / sum(played$r0_score, na.rm = TRUE)
+    } else {
+      MAGIC_NUMBER_PRESEASON
+    }
+  } else {
+    MAGIC_NUMBER_PRESEASON
+  }
+}, error = function(e) MAGIC_NUMBER_PRESEASON)
+
+# ── Build player lookup JSON ──────────────────────────────────────────────────
+if (!is.null(players_raw)) {
+  players_json <- players_raw |>
+    transmute(
+      id           = id,
+      name         = player_name,
+      team         = if ("team" %in% names(players_raw)) team else "UNK",
+      position     = position,
+      price        = if ("hidden_price" %in% names(players_raw)) hidden_price else starting_price,
+      starting_price = starting_price,
+      r0_score     = r0_score,
+      breakeven    = breakeven
+    ) |>
+    arrange(name) |>
+    toJSON(na = "null") |> as.character()
+} else {
+  players_json <- "[]"
+}
+
+magic_json    <- as.character(toJSON(magic_number, auto_unbox = TRUE))
+bye_json      <- as.character(toJSON(team_bye,     auto_unbox = TRUE))
+params_json   <- as.character(pricing_parameters |>
+  transmute(
+    score_count         = score_count,
+    price_change_factor = price_change_factor,
+    weights             = weights,
+    weights_breakeven   = weights_breakeven
+  ) |>
+  toJSON())
+basement_json <- as.character(toJSON(BASEMENT_PRICE, auto_unbox = TRUE))
+```
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Pass R data into JS                                                      -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+```{r inject-js-data}
+#| output: asis
+#| echo: false
+cat(paste0(
+  '<script>\n',
+  '  const PLAYERS_DATA      = ', players_json, ';\n',
+  '  const MAGIC_NUMBER      = ', magic_json, ';\n',
+  '  const BYE_SCHEDULE      = ', bye_json, ';\n',
+  '  const PRICING_PARAMS    = ', params_json, ';\n',
+  '  const BASEMENT_PRICE_JS = ', basement_json, ';\n',
+  '</script>\n'
+))
+```
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- Styles                                                                   -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+```{=html}
+<style>
+  /* ── Layout ──────────────────────────────────────────────────────────── */
+  .projector-wrap {
+    font-family: 'Inter', system-ui, sans-serif;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* ── Player search ───────────────────────────────────────────────────── */
+  .search-box {
+    position: relative;
+    margin-bottom: 1.5rem;
+  }
+  .search-box input {
+    width: 100%;
+    padding: .65rem 1rem;
+    font-size: 1.05rem;
+    border: 2px solid var(--bs-border-color, #dee2e6);
+    border-radius: 8px;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    box-sizing: border-box;
+    transition: border-color .2s;
+  }
+  .search-box input:focus {
+    outline: none;
+    border-color: #e8611a;
+  }
+  .autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0; right: 0;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid var(--bs-border-color, #dee2e6);
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    z-index: 999;
+    box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  }
+  .autocomplete-list div {
+    padding: .5rem 1rem;
+    cursor: pointer;
+    font-size: .95rem;
+    transition: background .15s;
+  }
+  .autocomplete-list div:hover,
+  .autocomplete-list div.active {
+    background: rgba(232,97,26,.12);
+  }
+
+  /* ── Player info card ────────────────────────────────────────────────── */
+  .player-info-card {
+    display: none;
+    background: var(--bs-body-bg, #fff);
+    border: 1.5px solid var(--bs-border-color, #dee2e6);
+    border-radius: 10px;
+    padding: 1rem 1.4rem;
+    margin-bottom: 1.5rem;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .player-info-card.visible { display: flex; }
+  .player-info-card .pill {
+    display: inline-block;
+    padding: .25rem .7rem;
+    border-radius: 999px;
+    font-size: .8rem;
+    font-weight: 600;
+    background: #e8611a;
+    color: #fff;
+    margin-right: .4rem;
+  }
+  .player-info-card .stat-label {
+    font-size: .75rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--bs-secondary-color, #6c757d);
+  }
+  .player-info-card .stat-value {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--bs-body-color, #212529);
+  }
+  .info-item { display: flex; flex-direction: column; min-width: 90px; }
+
+  /* ── Score inputs ────────────────────────────────────────────────────── */
+  .rounds-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .round-cell {
+    background: var(--bs-body-bg, #fff);
+    border: 1.5px solid var(--bs-border-color, #dee2e6);
+    border-radius: 10px;
+    padding: .8rem 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+  }
+  .round-cell.bye-round { border-color: #888; opacity: .7; }
+  .round-cell label {
+    font-size: .78rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--bs-secondary-color, #6c757d);
+  }
+  .round-cell input {
+    width: 100%;
+    padding: .4rem .6rem;
+    font-size: 1rem;
+    border: 1.5px solid var(--bs-border-color, #dee2e6);
+    border-radius: 6px;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    box-sizing: border-box;
+    transition: border-color .2s;
+  }
+  .round-cell input:focus { outline: none; border-color: #e8611a; }
+  .round-cell input:disabled {
+    background: var(--bs-secondary-bg, #e9ecef);
+    cursor: not-allowed;
+  }
+  .bye-badge {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    background: #888;
+    color: #fff;
+    border-radius: 4px;
+    padding: .1rem .4rem;
+    margin-top: .2rem;
+  }
+
+  /* ── Magic number override ───────────────────────────────────────────── */
+  .mn-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+    font-size: .9rem;
+  }
+  .mn-row label { font-weight: 600; white-space: nowrap; }
+  .mn-row input {
+    width: 110px;
+    padding: .35rem .6rem;
+    border: 1.5px solid var(--bs-border-color, #dee2e6);
+    border-radius: 6px;
+    background: var(--bs-body-bg, #fff);
+    color: var(--bs-body-color, #212529);
+    font-size: .95rem;
+  }
+  .mn-row input:focus { outline: none; border-color: #e8611a; }
+  .mn-note { font-size: .78rem; color: var(--bs-secondary-color, #6c757d); }
+
+  /* ── Results table ───────────────────────────────────────────────────── */
+  .results-section { display: none; }
+  .results-section.visible { display: block; }
+
+  .results-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: .9rem;
+    margin-top: .5rem;
+  }
+  .results-table th {
+    padding: .5rem .7rem;
+    text-align: center;
+    font-size: .75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    background: rgba(232,97,26,.1);
+    border-bottom: 2px solid #e8611a;
+    white-space: nowrap;
+  }
+  .results-table th:first-child { text-align: left; }
+  .results-table td {
+    padding: .45rem .7rem;
+    text-align: center;
+    border-bottom: 1px solid var(--bs-border-color, #dee2e6);
+  }
+  .results-table td:first-child { text-align: left; font-weight: 600; }
+  .results-table tr:last-child td { border-bottom: none; }
+  .results-table .bye-col { opacity: .5; font-style: italic; }
+
+  /* ── Colour coding ───────────────────────────────────────────────────── */
+  .pos-change { color: #198754; font-weight: 700; }
+  .neg-change { color: #dc3545; font-weight: 700; }
+  .zero-change { color: var(--bs-secondary-color, #6c757d); }
+
+  /* ── Caveat ──────────────────────────────────────────────────────────── */
+  .caveat {
+    font-size: .8rem;
+    color: var(--bs-secondary-color, #6c757d);
+    border-left: 3px solid #e8611a;
+    padding: .5rem .9rem;
+    margin-bottom: 1.5rem;
+    background: rgba(232,97,26,.05);
+    border-radius: 0 6px 6px 0;
+  }
+</style>
+```
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- UI                                                                       -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+```{=html}
+<div class="projector-wrap">
+
+  <div class="caveat">
+    ⚠️ Prices and breakevens are estimates. Magic numbers are based on historical trends and R0 player data. Prices may differ slightly from official AFL Fantasy.
+  </div>
+
+  <!-- Player search -->
+  <div class="search-box">
+    <input type="text" id="playerSearch" placeholder="Search for a player…" autocomplete="off">
+    <div class="autocomplete-list" id="autocompleteList"></div>
+  </div>
+
+  <!-- Player info -->
+  <div class="player-info-card" id="playerInfoCard">
+    <div class="info-item">
+      <span class="stat-label">Name</span>
+      <span class="stat-value" id="infoName">—</span>
+    </div>
+    <div class="info-item">
+      <span class="stat-label">Team</span>
+      <span class="stat-value" id="infoTeam">—</span>
+    </div>
+    <div class="info-item">
+      <span class="stat-label">Position</span>
+      <span class="stat-value" id="infoPosition">—</span>
+    </div>
+    <div class="info-item">
+      <span class="stat-label">Initial Price</span>
+      <span class="stat-value" id="infoPrice">—</span>
+    </div>
+    <div class="info-item">
+      <span class="stat-label">Initial Priced At</span>
+      <span class="stat-value" id="infoPricedAt">—</span>
+    </div>
+    <div class="info-item">
+      <span class="stat-label">R0 Score</span>
+      <span class="stat-value" id="infoR0Score">—</span>
+    </div>
+    <div class="info-item">
+      <span class="stat-label">R1 Breakeven</span>
+      <span class="stat-value" id="infoBreakeven">—</span>
+    </div>
+    <div class="info-item">
+      <span class="stat-label">Bye Round</span>
+      <span class="stat-value" id="infoBye">—</span>
+    </div>
+  </div>
+
+  <!-- Score inputs R1–R6 -->
+  <div class="rounds-grid" id="roundsGrid"></div>
+
+  <!-- Results -->
+  <div class="results-section" id="resultsSection">
+    <h3>Projected Price Path</h3>
+    <div style="overflow-x:auto">
+      <div id="resultsTableContainer"></div>
+    </div>
+  </div>
+
+</div><!-- /projector-wrap -->
+```
+
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+<!-- JavaScript engine                                                        -->
+<!-- ═══════════════════════════════════════════════════════════════════════ -->
+
+```{=html}
+<script>
+(function () {
+  "use strict";
+
+  // ── Parse data passed from R ──────────────────────────────────────────────
+  const players        = PLAYERS_DATA;
+  let   magicNumber    = parseFloat(MAGIC_NUMBER);
+  const byeSchedule   = BYE_SCHEDULE;  
+  const pricingParams  = PRICING_PARAMS;
+  const BASEMENT       = parseInt(BASEMENT_PRICE_JS);
+  const NUM_ROUNDS     = 6;   // R1 through R6
+  const MAGIC_BY_ROUND = { 0: 10490, 1: 10180, 2: 10104, 3: 10054, 4: 9984, 5: 9988, 6: 10072 };
+
+  // ── DOM refs ──────────────────────────────────────────────────────────────
+  const searchInput   = document.getElementById("playerSearch");
+  const acList        = document.getElementById("autocompleteList");
+  const infoCard      = document.getElementById("playerInfoCard");
+  const roundsGrid    = document.getElementById("roundsGrid");
+  const resultsSection= document.getElementById("resultsSection");
+  const resultsHead   = document.getElementById("resultsHead");
+  const resultsBody   = document.getElementById("resultsBody");
+  const mnInput       = document.getElementById("magicNumberInput");
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  let selectedPlayer = null;
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const fmt  = v => "$" + Math.round(v).toLocaleString("en-AU");
+  const fmtD = v => {
+    const r = Math.round(v);
+    if (r > 0) return `<span class="pos-change">+${r.toLocaleString("en-AU")}</span>`;
+    if (r < 0) return `<span class="neg-change">${r.toLocaleString("en-AU")}</span>`;
+    return `<span class="zero-change">$0</span>`;
+  };
+
+  // ── Pricing core (mirrors R logic) ───────────────────────────────────────
+  function getParams(scoreCount) {
+    return pricingParams.find(p => p.score_count === scoreCount);
+  }
+
+  function weightedMean(values, weights) {
+    let s = 0, w = 0;
+    for (let i = 0; i < values.length; i++) { s += values[i] * weights[i]; w += weights[i]; }
+    return s / w;
+  }
+
+  /**
+   * Calculate price change for a player given their score history and current price.
+   * scores: array of scores in chronological order (oldest first), most recent last.
+   * Returns { priceChange, newPrice, weightedAvg, breakeven }
+   */
+  function calcPriceChange(scores, price, mn) {
+    // Take up to last 5, reverse so most-recent is first
+    const sc    = scores.filter(s => s !== null && s !== undefined).slice(-5).reverse();
+    const count = sc.length;
+    if (count === 0) return null;
+
+    const params = getParams(count);
+    if (!params) return null;
+
+    const wts = Array.isArray(params.weights[0]) 
+      ? params.weights[0] 
+      : Array.isArray(params.weights) 
+        ? params.weights 
+        : [];
+    const factor       = params.price_change_factor;
+    console.log("calcPriceChange - sc:", sc, "wts:", wts, "factor:", factor, "price:", price, "mn:", mn);
+    const prevPricedAt = price / mn;
+    const wa           = weightedMean(sc, wts);
+    const priceChangeRaw = mn * factor * (wa - prevPricedAt);
+
+    let newPriceRaw;
+    if (price + priceChangeRaw <= BASEMENT) {
+      newPriceRaw = BASEMENT;
+    } else {
+      newPriceRaw = Math.max(price + priceChangeRaw, BASEMENT);
+    }
+
+    // Round to nearest 1000
+    const newPriceRounded    = Math.round(newPriceRaw / 1000) * 1000;
+    const priceChangeRounded = newPriceRounded - price;
+
+    return {
+      priceChangeRaw,
+      priceChange: priceChangeRounded,
+      newPrice:    newPriceRounded,
+      weightedAvg: wa
+    };
+  }
+
+  /**
+   * Calculate breakeven: score needed next game to maintain price.
+   * scores: history array (same convention as calcPriceChange — chronological, most-recent last).
+   */
+  function calcBreakeven(scores, price, mn, priceTarget) {
+    if (priceTarget === undefined) priceTarget = price;
+    const sc    = scores.filter(s => s !== null && s !== undefined).slice(-4).reverse(); // last 4
+    const count = sc.length;
+    const params = getParams(Math.min(count + 1, 5));
+    console.log("count:", count, "params:", params);
+    if (!params) return null;
+
+    const firstWeight = params.weights[0];
+    const wtsBreakeven = params.weights_breakeven || [];
+    console.log("calcBreakeven - sc:", sc, "wtsBreakeven:", wtsBreakeven, "firstWeight:", firstWeight, "count:", count);
+    console.log("BE inputs:", {sc, wtsBreakeven, firstWeight, price, mn, count});
+    console.log("BE wtsBreakeven type:", typeof wtsBreakeven, Array.isArray(wtsBreakeven), wtsBreakeven);
+    console.log("BE firstWeight type:", typeof firstWeight, firstWeight);
+    console.log("BE pricedAt:", price / mn, "isNaN:", isNaN(price / mn));
+    const totalWeights  = (wtsBreakeven.length > 0 ? wtsBreakeven.reduce((a,b)=>a+b, 0) : 0) + firstWeight;
+    const pricedAt      = price / mn;
+    const pricedAtTarget= priceTarget / mn;
+    const diffTerm      = (pricedAtTarget - pricedAt) / 0.25;
+
+    let weightedSumPrev = 0;
+    if (sc.length > 0 && wtsBreakeven.length > 0) {
+      weightedSumPrev = weightedMean(sc, wtsBreakeven) * wtsBreakeven.reduce((a,b)=>a+b,0);
+    }
+
+    const beRaw = (diffTerm + totalWeights * pricedAt - weightedSumPrev) / firstWeight;
+    return Math.ceil(beRaw);
+  }
+
+  // ── Build the rounds grid ─────────────────────────────────────────────────
+  function buildRoundsGrid(byeRound) {
+    roundsGrid.innerHTML = "";
+    for (let r = 1; r <= NUM_ROUNDS; r++) {
+      const isBye = byeRound && r === byeRound;
+      const cell  = document.createElement("div");
+      cell.className = "round-cell" + (isBye ? " bye-round" : "");
+      cell.dataset.round = r;
+
+      const lbl = document.createElement("label");
+      lbl.htmlFor = `score_r${r}`;
+      lbl.textContent = `Round ${r}`;
+      cell.appendChild(lbl);
+
+      if (isBye) {
+        const badge = document.createElement("span");
+        badge.className = "bye-badge";
+        badge.textContent = "BYE";
+        cell.appendChild(badge);
+        const inp = document.createElement("input");
+        inp.type = "text"; inp.value = "BYE"; inp.disabled = true;
+        inp.id = `score_r${r}`;
+        cell.appendChild(inp);
+      } else {
+        const inp = document.createElement("input");
+        inp.type = "number"; inp.min = 0; inp.max = 250;
+        inp.placeholder = "Score…";
+        inp.id = `score_r${r}`;
+        inp.addEventListener("input", recalculate);
+        cell.appendChild(inp);
+      }
+      roundsGrid.appendChild(cell);
+    }
+  }
+
+  // ── Populate info card ────────────────────────────────────────────────────
+  function populateInfoCard(p) {
+    document.getElementById("infoName").textContent      = p.name;
+    document.getElementById("infoTeam").textContent      = p.team || "—";
+    document.getElementById("infoPosition").textContent  = p.position || "—";
+    document.getElementById("infoPrice").textContent = p.starting_price ? fmt(p.starting_price) : "—";
+    document.getElementById("infoPricedAt").textContent = p.starting_price ? Math.round(p.starting_price / 10490) : "—";
+    const r0Bye = byeSchedule[p.team] === 0;
+    document.getElementById("infoR0Score").textContent = p.r0_score != null ? p.r0_score : (r0Bye ? "BYE" : "DNP");
+    document.getElementById("infoBreakeven").textContent = p.breakeven != null ? Math.round(p.breakeven) : "—";
+    const byeRound = byeSchedule[p.team];
+    document.getElementById("infoBye").textContent       = byeRound ? `Round ${byeRound}` : "—";
+    infoCard.classList.add("visible");
+  }
+
+  // ── Main calculation ──────────────────────────────────────────────────────
+  function recalculate() {
+    if (!selectedPlayer) return;
+
+    const mn = (r) => MAGIC_BY_ROUND[r] ?? magicNumber;
+    const byeRound  = byeSchedule[selectedPlayer.team] || null;
+    const startPrice= selectedPlayer.price;
+    const r0Score   = selectedPlayer.r0_score;
+
+    const enteredScores = [];
+    for (let r = 1; r <= NUM_ROUNDS; r++) {
+      if (byeRound && r === byeRound) {
+        enteredScores.push(null);
+      } else {
+        const v = parseFloat(document.getElementById(`score_r${r}`)?.value);
+        enteredScores.push(isNaN(v) ? null : v);
+      }
+    }
+
+    const baseHistory = r0Score != null ? [r0Score] : [];
+
+    const rows = {
+      scores:      [],
+      priceChange: [],
+      totalChange: [],
+      price:       [],
+      pricedAt:    [],
+      breakeven:   []
+    };
+
+    let currentPrice = startPrice;
+    let history      = [...baseHistory];
+
+    for (let i = 0; i < NUM_ROUNDS; i++) {
+      const roundNum  = i + 1;
+      const isBye     = byeRound && roundNum === byeRound;
+      const score     = enteredScores[i];
+      const mnNow     = mn(roundNum);
+      const mnNext    = mn(Math.min(roundNum + 1, 6));
+
+      if (isBye) {
+        rows.scores.push("BYE");
+        rows.priceChange.push(null);
+        rows.totalChange.push(null);
+        rows.price.push(currentPrice);
+        rows.pricedAt.push(Math.round(currentPrice / mnNow));
+        const be = calcBreakeven(history, currentPrice, mnNext);
+        rows.breakeven.push(be);
+        continue;
+      }
+
+      if (score === null) {
+        rows.scores.push("—");
+        rows.priceChange.push(null);
+        rows.totalChange.push(null);
+        rows.price.push(currentPrice);
+        rows.pricedAt.push(Math.round(currentPrice / mnNow));
+        const be = calcBreakeven(history, currentPrice, mnNext);
+        rows.breakeven.push(be);
+        continue;
+      }
+
+      const newHistory = [...history, score];
+      const result     = calcPriceChange(newHistory, currentPrice, mnNow);
+
+      if (!result) {
+        rows.scores.push(score);
+        rows.priceChange.push(null);
+        rows.totalChange.push(null);
+        rows.price.push(currentPrice);
+        rows.pricedAt.push(Math.round(currentPrice / mnNow));
+        rows.breakeven.push(null);
+        continue;
+      }
+
+      const newPrice    = result.newPrice;
+      const change      = result.priceChange;
+      const totalChange = newPrice - selectedPlayer.starting_price;
+
+      rows.scores.push(score);
+      rows.priceChange.push(change);
+      rows.totalChange.push(totalChange);
+      rows.price.push(newPrice);
+      rows.pricedAt.push(Math.round(newPrice / mnNow));
+
+      const be = calcBreakeven(newHistory, newPrice, mnNext);
+      rows.breakeven.push(be);
+
+      currentPrice = newPrice;
+      history      = newHistory;
+    }
+
+    renderTable(rows, byeRound);
+    resultsSection.classList.add("visible");
+  }
+
+  // ── Render results table ──────────────────────────────────────────────────
+  function renderTable(rows, byeRound) {
+    const container = document.getElementById("resultsTableContainer");
+    container.innerHTML = '<table class="results-table"><thead id="resultsHead"></thead><tbody id="resultsBody"></tbody></table>';
+    const resultsHead = container.querySelector("thead");
+    const resultsBody = container.querySelector("tbody");
+
+    // Header
+    let hHtml = "<tr><th>Stat</th>";
+    hHtml += `<th>Round 0</th>`;
+    for (let r = 1; r <= NUM_ROUNDS; r++) {
+      hHtml += `<th>Round ${r}</th>`;
+    }
+    hHtml += "</tr>";
+    resultsHead.innerHTML = hHtml;
+
+    const rowDefs = [
+      { key: "scores",      label: "Score" },
+      { key: "priceChange", label: "Price Change",  money: true, diff: true },
+      { key: "totalChange", label: "Total Change",  money: true, diff: true },
+      { key: "price",       label: "Price",         money: true },
+      { key: "pricedAt",    label: "Priced At" },
+      { key: "breakeven",   label: "New Breakeven" }
+    ];
+
+    let bHtml = "";
+    for (const rd of rowDefs) {
+      bHtml += `<tr><td>${rd.label}</td>`;
+      // Round 0 column
+      if (rd.key === "scores") {
+        const r0Bye = byeSchedule[selectedPlayer.team] === 0;
+bHtml += `<td>${selectedPlayer.r0_score != null ? selectedPlayer.r0_score : (r0Bye ? "BYE" : "DNP")}</td>`;
+      } else if (rd.key === "price") {
+        bHtml += `<td>${fmt(selectedPlayer.price)}</td>`;
+      } else if (rd.key === "pricedAt") {
+        bHtml += `<td>${Math.round(selectedPlayer.price / MAGIC_BY_ROUND[0])}</td>`;
+      } else if (rd.key === "breakeven") {
+        bHtml += `<td>${selectedPlayer.breakeven != null ? Math.round(selectedPlayer.breakeven) : "—"}</td>`;
+      } else if (rd.key === "priceChange") {
+        const r0change = selectedPlayer.price - selectedPlayer.starting_price;
+        bHtml += `<td>${fmtD(r0change)}</td>`;
+      } else if (rd.key === "totalChange") {
+        const r0change = selectedPlayer.price - selectedPlayer.starting_price;
+        bHtml += `<td>${fmtD(r0change)}</td>`;
+      } else {
+        bHtml += `<td>—</td>`;
+      }
+      for (let i = 0; i < NUM_ROUNDS; i++) {
+        const r   = i + 1;
+        const val = rows[rd.key][i];
+        const bye = byeRound && r === byeRound;
+
+        let cell;
+        if (val === null || val === undefined) {
+          cell = `<td class="${bye ? "bye-col" : ""}">—</td>`;
+        } else if (val === "BYE") {
+          cell = `<td class="bye-col">BYE</td>`;
+        } else if (val === "—") {
+          cell = `<td>—</td>`;
+        } else if (rd.diff && rd.money) {
+          cell = `<td>${fmtD(val)}</td>`;
+        } else if (rd.money) {
+          cell = `<td>${fmt(val)}</td>`;
+        } else {
+          cell = `<td>${val}</td>`;
+        }
+        bHtml += cell;
+      }
+      bHtml += "</tr>";
+    }
+    resultsBody.innerHTML = bHtml;
+  }
+
+  // ── Autocomplete ──────────────────────────────────────────────────────────
+  let acIndex = -1;
+
+  searchInput.addEventListener("input", () => {
+    const q = searchInput.value.trim().toLowerCase();
+    acList.innerHTML = "";
+    acIndex = -1;
+    if (q.length < 2) return;
+
+    const matches = players
+      .filter(p => p.name.toLowerCase().includes(q))
+      .slice(0, 20);
+
+    matches.forEach((p, i) => {
+      const div = document.createElement("div");
+      div.textContent = `${p.name} (${p.team || "?"})`;
+      div.dataset.idx = i;
+      div.addEventListener("mousedown", () => selectPlayer(p));
+      acList.appendChild(div);
+    });
+  });
+
+  searchInput.addEventListener("keydown", e => {
+    const items = acList.querySelectorAll("div");
+    if (e.key === "ArrowDown") { acIndex = Math.min(acIndex + 1, items.length - 1); }
+    else if (e.key === "ArrowUp") { acIndex = Math.max(acIndex - 1, 0); }
+    else if (e.key === "Enter" && acIndex >= 0) {
+      items[acIndex].dispatchEvent(new Event("mousedown"));
+      return;
+    } else return;
+    items.forEach((el, i) => el.classList.toggle("active", i === acIndex));
+  });
+
+  document.addEventListener("click", e => {
+    if (!searchInput.contains(e.target) && !acList.contains(e.target)) {
+      acList.innerHTML = "";
+    }
+  });
+
+  function selectPlayer(p) {
+    selectedPlayer = p;
+    searchInput.value = p.name;
+    acList.innerHTML = "";
+    populateInfoCard(p);
+    const byeRound = byeSchedule[p.team] || null;
+    buildRoundsGrid(byeRound);
+    resultsSection.classList.remove("visible");
+    recalculate();
+  }
+
+})();
+</script>
+```
