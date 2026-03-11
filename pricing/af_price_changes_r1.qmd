@@ -11,7 +11,7 @@ execute:
 library(arrow)
 library(dplyr)
 library(reactable)
-
+magic_number_r1 <- 10179.88
 ```
 
 ```{r}
@@ -118,7 +118,7 @@ price_change_table |>
       r1_proj_change_150 = colDef(name = "@ 150", format = price_format)
     ),
     columnGroups = list(
-        colGroup(name = "R1 projected price change", columns = c("r1_proj_change_priced_at", "r1_proj_change_0", "r1_proj_change_10", "r1_proj_change_20", "r1_proj_change_30", "r1_proj_change_40", "r1_proj_change_50", "r1_proj_change_60", "r1_proj_change_70", "r1_proj_change_80", "r1_proj_change_90", "r1_proj_change_100", "r1_proj_change_110", "r1_proj_change_120", "r1_proj_change_130", "r1_proj_change_140", "r1_proj_change_150")),
+        colGroup(name = "R1 projected price change, if R1 score is ...", columns = c("r1_proj_change_priced_at", "r1_proj_change_0", "r1_proj_change_10", "r1_proj_change_20", "r1_proj_change_30", "r1_proj_change_40", "r1_proj_change_50", "r1_proj_change_60", "r1_proj_change_70", "r1_proj_change_80", "r1_proj_change_90", "r1_proj_change_100", "r1_proj_change_110", "r1_proj_change_120", "r1_proj_change_130", "r1_proj_change_140", "r1_proj_change_150")),
         colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason"))
         ),
     filterable = TRUE,
@@ -173,7 +173,7 @@ breakeven_table |>
     ),
     columnGroups = list(
         colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason")),
-        colGroup(name = "Score required to acheieve price change of...", columns = c("r1_proj_breakeven_neg150", "r1_proj_breakeven_neg125", "r1_proj_breakeven_neg100", "r1_proj_breakeven_neg75", "r1_proj_breakeven_neg50", "r1_proj_breakeven_neg25", "r1_proj_breakeven_0", "r1_proj_breakeven_25", "r1_proj_breakeven_50", "r1_proj_breakeven_75", "r1_proj_breakeven_100", "r1_proj_breakeven_125", "r1_proj_breakeven_150"))
+        colGroup(name = "R1 score required to acheieve price change of...", columns = c("r1_proj_breakeven_neg150", "r1_proj_breakeven_neg125", "r1_proj_breakeven_neg100", "r1_proj_breakeven_neg75", "r1_proj_breakeven_neg50", "r1_proj_breakeven_neg25", "r1_proj_breakeven_0", "r1_proj_breakeven_25", "r1_proj_breakeven_50", "r1_proj_breakeven_75", "r1_proj_breakeven_100", "r1_proj_breakeven_125", "r1_proj_breakeven_150"))
         ),
     filterable = TRUE,
     defaultPageSize = 10,
@@ -182,3 +182,71 @@ breakeven_table |>
 ```
 
 
+
+# Projected Priced At
+
+Note that below makes an assumption about Magic number decay so is only an estimate.
+
+```{r}
+
+priced_at_table <- r1_projected_price_changes |> 
+  arrange(desc(r1_proj_change_priced_at)) |> 
+  mutate(
+    played_r0 = if_else(played_r0, "Yes", "No"),
+    starting_price = price / 1000,
+    priced_at_new = round(price/magic_number_r1, 0),
+    across(starts_with("r1_proj_change_"), ~ pmax(round((.x + price)/magic_number_r1, 0), min(priced_at_new)))
+  ) |> 
+  select(
+    player_name,
+    position,
+    played_r0,
+    starting_price,
+    priced_at_preseason,
+    priced_at_new,
+    r1_proj_change_priced_at,
+    starts_with("r1_proj_change_")
+  ) |> 
+  select(
+    -r1_proj_change_r0
+  )
+
+priced_at_table |> 
+  reactable(
+    columns = list(
+      player_name = colDef(name = "Player", sticky = "left"),
+      position = colDef(name = "Position"),
+      played_r0 = colDef(name = "Played R0?"),
+      starting_price = colDef(name = "Starting Price", format = price_format),
+      priced_at_preseason = colDef(name = "Priced At"),
+      priced_at_new = colDef(name = "Priced At (Adjusted)*"),
+      r1_proj_change_priced_at = colDef(name = "@ Priced At"),
+      r1_proj_change_0 = colDef(name = "@ 0"),
+      r1_proj_change_10 = colDef(name = "@ 10"),
+      r1_proj_change_20 = colDef(name = "@ 20"),
+      r1_proj_change_30 = colDef(name = "@ 30"),
+      r1_proj_change_40 = colDef(name = "@ 40"),
+      r1_proj_change_50 = colDef(name = "@ 50"),
+      r1_proj_change_60 = colDef(name = "@ 60"),
+      r1_proj_change_70 = colDef(name = "@ 70"),
+      r1_proj_change_80 = colDef(name = "@ 80"),
+      r1_proj_change_90 = colDef(name = "@ 90"),
+      r1_proj_change_100 = colDef(name = "@ 100"),
+      r1_proj_change_110 = colDef(name = "@ 110"),
+      r1_proj_change_120 = colDef(name = "@ 120"),
+      r1_proj_change_130 = colDef(name = "@ 130"),
+      r1_proj_change_140 = colDef(name = "@ 140"),
+      r1_proj_change_150 = colDef(name = "@ 150")
+    ),
+    columnGroups = list(
+        colGroup(name = "R1 projected 'priced at', if R1 score is ...", columns = c("r1_proj_change_priced_at", "r1_proj_change_0", "r1_proj_change_10", "r1_proj_change_20", "r1_proj_change_30", "r1_proj_change_40", "r1_proj_change_50", "r1_proj_change_60", "r1_proj_change_70", "r1_proj_change_80", "r1_proj_change_90", "r1_proj_change_100", "r1_proj_change_110", "r1_proj_change_120", "r1_proj_change_130", "r1_proj_change_140", "r1_proj_change_150")),
+        colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason", "priced_at_new"))
+        ),
+    filterable = TRUE,
+    defaultPageSize = 10,
+    pagination = TRUE
+  )
+
+```
+
+*: Priced at (adjusted) is adjusted for expected magic number decay.
