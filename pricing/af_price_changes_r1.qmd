@@ -11,6 +11,7 @@ execute:
 library(arrow)
 library(dplyr)
 library(reactable)
+library(htmltools)
 magic_number_r1 <- 10179.88
 ```
 
@@ -43,9 +44,14 @@ r0_player_table <- r1_projected_price_changes |>
   ) |> 
   arrange(desc(r0_score))
 
-r0_player_table |> 
-  reactable(
-    columns = list(
+tagList(
+  tags$button(
+    "Download CSV",
+    onclick = "Reactable.downloadDataCSV('r0-player-hidden', 'bitinthat-r0-player-hidden.csv')"
+  ),
+  r0_player_table |> 
+    reactable(
+      columns = list(
       player_name = colDef(name = "Player", sticky = "left"),
       position = colDef(name = "Position"),
       r0_score = colDef(name = "Round 0 Score"),
@@ -58,7 +64,10 @@ r0_player_table |>
     filterable = TRUE,
     defaultPageSize = 10,
     pagination = TRUE,
+    elementId = "r0-player-table"
   )
+)
+
 
 ```
 
@@ -91,50 +100,116 @@ price_change_table <- r1_projected_price_changes |>
     -r1_proj_change_r0
   )
 
-price_change_table |> 
-  reactable(
-    columns = list(
-      player_name = colDef(name = "Player", sticky = "left"),
-      position = colDef(name = "Position"),
-      played_r0 = colDef(name = "Played R0?"),
-      starting_price = colDef(name = "Starting Price", format = price_format),
-      priced_at_preseason = colDef(name = "Priced At"),
-      r1_proj_change_priced_at = colDef(name = "@ Priced At", format = price_format),
-      r1_proj_change_0 = colDef(name = "@ 0", format = price_format),
-      r1_proj_change_10 = colDef(name = "@ 10", format = price_format),
-      r1_proj_change_20 = colDef(name = "@ 20", format = price_format),
-      r1_proj_change_30 = colDef(name = "@ 30", format = price_format),
-      r1_proj_change_40 = colDef(name = "@ 40", format = price_format),
-      r1_proj_change_50 = colDef(name = "@ 50", format = price_format),
-      r1_proj_change_60 = colDef(name = "@ 60", format = price_format),
-      r1_proj_change_70 = colDef(name = "@ 70", format = price_format),
-      r1_proj_change_80 = colDef(name = "@ 80", format = price_format),
-      r1_proj_change_90 = colDef(name = "@ 90", format = price_format),
-      r1_proj_change_100 = colDef(name = "@ 100", format = price_format),
-      r1_proj_change_110 = colDef(name = "@ 110", format = price_format),
-      r1_proj_change_120 = colDef(name = "@ 120", format = price_format),
-      r1_proj_change_130 = colDef(name = "@ 130", format = price_format),
-      r1_proj_change_140 = colDef(name = "@ 140", format = price_format),
-      r1_proj_change_150 = colDef(name = "@ 150", format = price_format)
-    ),
-    columnGroups = list(
-        colGroup(name = "R1 projected price change, if R1 score is ...", columns = c("r1_proj_change_priced_at", "r1_proj_change_0", "r1_proj_change_10", "r1_proj_change_20", "r1_proj_change_30", "r1_proj_change_40", "r1_proj_change_50", "r1_proj_change_60", "r1_proj_change_70", "r1_proj_change_80", "r1_proj_change_90", "r1_proj_change_100", "r1_proj_change_110", "r1_proj_change_120", "r1_proj_change_130", "r1_proj_change_140", "r1_proj_change_150")),
-        colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason"))
-        ),
-    filterable = TRUE,
-    defaultPageSize = 10,
-    pagination = TRUE
+tagList(
+  tags$button(
+    "Download CSV",
+    onclick = "Reactable.downloadDataCSV('r1-projected-price-change', 'bitinthat-r1-projected-price-change.csv')"
+  ),
+  price_change_table |> 
+    reactable(
+      columns = list(
+        player_name = colDef(name = "Player", sticky = "left"),
+        position = colDef(name = "Position"),
+        played_r0 = colDef(name = "Played R0?"),
+        starting_price = colDef(name = "Starting Price", format = price_format),
+        priced_at_preseason = colDef(name = "Priced At"),
+        r1_proj_change_priced_at = colDef(name = "@ Priced At", format = price_format),
+        r1_proj_change_0 = colDef(name = "@ 0", format = price_format),
+        r1_proj_change_10 = colDef(name = "@ 10", format = price_format),
+        r1_proj_change_20 = colDef(name = "@ 20", format = price_format),
+        r1_proj_change_30 = colDef(name = "@ 30", format = price_format),
+        r1_proj_change_40 = colDef(name = "@ 40", format = price_format),
+        r1_proj_change_50 = colDef(name = "@ 50", format = price_format),
+        r1_proj_change_60 = colDef(name = "@ 60", format = price_format),
+        r1_proj_change_70 = colDef(name = "@ 70", format = price_format),
+        r1_proj_change_80 = colDef(name = "@ 80", format = price_format),
+        r1_proj_change_90 = colDef(name = "@ 90", format = price_format),
+        r1_proj_change_100 = colDef(name = "@ 100", format = price_format),
+        r1_proj_change_110 = colDef(name = "@ 110", format = price_format),
+        r1_proj_change_120 = colDef(name = "@ 120", format = price_format),
+        r1_proj_change_130 = colDef(name = "@ 130", format = price_format),
+        r1_proj_change_140 = colDef(name = "@ 140", format = price_format),
+        r1_proj_change_150 = colDef(name = "@ 150", format = price_format)
+      ),
+      columnGroups = list(
+          colGroup(name = "R1 projected price change, if R1 score is ...", columns = c("r1_proj_change_priced_at", "r1_proj_change_0", "r1_proj_change_10", "r1_proj_change_20", "r1_proj_change_30", "r1_proj_change_40", "r1_proj_change_50", "r1_proj_change_60", "r1_proj_change_70", "r1_proj_change_80", "r1_proj_change_90", "r1_proj_change_100", "r1_proj_change_110", "r1_proj_change_120", "r1_proj_change_130", "r1_proj_change_140", "r1_proj_change_150")),
+          colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason"))
+          ),
+      filterable = TRUE,
+      defaultPageSize = 10,
+      pagination = TRUE,
+      elementId = "r1-projected-price-change"
+    )
+)
+```
+
+# Projected breakeven going into round 2
+
+```{r}
+
+projected_breakeven_table <- r1_projected_price_changes |> 
+  arrange(desc(r1_proj_change_priced_at)) |> 
+  mutate(
+    played_r0 = if_else(played_r0, "Yes", "No"),
+    starting_price = price / 1000
+  ) |> 
+  select(
+    player_name,
+    position,
+    played_r0,
+    starting_price,
+    priced_at_preseason,
+    starts_with("r2_proj_breakeven_")
   )
 
+tagList(
+  tags$button(
+    "Download CSV",
+    onclick = "Reactable.downloadDataCSV('r2-projected-breakeven', 'bitinthat-r2-projected-breakeven.csv')"
+  ),
+  projected_breakeven_table |> 
+    reactable(
+      columns = list(
+        player_name = colDef(name = "Player", sticky = "left"),
+        position = colDef(name = "Position"),
+        played_r0 = colDef(name = "Played R0?"),
+        starting_price = colDef(name = "Starting Price", format = price_format),
+        priced_at_preseason = colDef(name = "Priced At"),
+        r2_proj_breakeven_0 = colDef(name = "@ 0"),
+        r2_proj_breakeven_10 = colDef(name = "@ 10"),
+        r2_proj_breakeven_20 = colDef(name = "@ 20"),
+        r2_proj_breakeven_30 = colDef(name = "@ 30"),
+        r2_proj_breakeven_40 = colDef(name = "@ 40"),
+        r2_proj_breakeven_50 = colDef(name = "@ 50"),
+        r2_proj_breakeven_60 = colDef(name = "@ 60"),
+        r2_proj_breakeven_70 = colDef(name = "@ 70"),
+        r2_proj_breakeven_80 = colDef(name = "@ 80"),
+        r2_proj_breakeven_90 = colDef(name = "@ 90"),
+        r2_proj_breakeven_100 = colDef(name = "@ 100"),
+        r2_proj_breakeven_110 = colDef(name = "@ 110"),
+        r2_proj_breakeven_120 = colDef(name = "@ 120"),
+        r2_proj_breakeven_130 = colDef(name = "@ 130"),
+        r2_proj_breakeven_140 = colDef(name = "@ 140"),
+        r2_proj_breakeven_150 = colDef(name = "@ 150")
+      ),
+      columnGroups = list(
+          colGroup(name = "R2 breakeven, if R1 score is ...", columns = c("r2_proj_breakeven_0", "r2_proj_breakeven_10", "r2_proj_breakeven_20", "r2_proj_breakeven_30", "r2_proj_breakeven_40", "r2_proj_breakeven_50", "r2_proj_breakeven_60", "r2_proj_breakeven_70", "r2_proj_breakeven_80", "r2_proj_breakeven_90", "r2_proj_breakeven_100", "r2_proj_breakeven_110", "r2_proj_breakeven_120", "r2_proj_breakeven_130", "r2_proj_breakeven_140", "r2_proj_breakeven_150")),
+          colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason"))
+          ),
+      filterable = TRUE,
+      defaultPageSize = 10,
+      pagination = TRUE,
+      elementId = "r2-projected-breakeven"
+    )
+)
 ```
 
 
-
-# Projected Breakevens
+# Score to acheive price change 
 
 
 ```{r}
-breakeven_table <- r1_projected_price_changes |> 
+breakeven_score_table <- r1_projected_price_changes |> 
   arrange(r1_proj_breakeven_0) |> 
   mutate(
     played_r0 = if_else(played_r0, "Yes", "No"),
@@ -149,36 +224,43 @@ breakeven_table <- r1_projected_price_changes |>
     starts_with("r1_proj_breakeven_")
   )
 
-breakeven_table |> 
-  reactable(
-    columns = list(
-      player_name = colDef(name = "Player", sticky = "left"),
-      position = colDef(name = "Position"),
-      played_r0 = colDef(name = "Played R0?"),
-      starting_price = colDef(name = "Starting Price", format = price_format),
-      priced_at_preseason = colDef(name = "Priced At"),
-      r1_proj_breakeven_neg150 = colDef(name = "-150k"),
-      r1_proj_breakeven_neg125 = colDef(name = "-125k"),
-      r1_proj_breakeven_neg100 = colDef(name = "-100k"),
-      r1_proj_breakeven_neg75 = colDef(name = "-75k"),
-      r1_proj_breakeven_neg50 = colDef(name = "-50k"),
-      r1_proj_breakeven_neg25 = colDef(name = "-25k"),
-      r1_proj_breakeven_0 = colDef(name = "0k"),
-      r1_proj_breakeven_25 = colDef(name = "25k"),
-      r1_proj_breakeven_50 = colDef(name = "50k"),
-      r1_proj_breakeven_75 = colDef(name = "75k"),
-      r1_proj_breakeven_100 = colDef(name = "100k"),
-      r1_proj_breakeven_125 = colDef(name = "125k"),
-      r1_proj_breakeven_150 = colDef(name = "150k")
-    ),
-    columnGroups = list(
-        colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason")),
-        colGroup(name = "R1 score required to acheieve price change of...", columns = c("r1_proj_breakeven_neg150", "r1_proj_breakeven_neg125", "r1_proj_breakeven_neg100", "r1_proj_breakeven_neg75", "r1_proj_breakeven_neg50", "r1_proj_breakeven_neg25", "r1_proj_breakeven_0", "r1_proj_breakeven_25", "r1_proj_breakeven_50", "r1_proj_breakeven_75", "r1_proj_breakeven_100", "r1_proj_breakeven_125", "r1_proj_breakeven_150"))
-        ),
-    filterable = TRUE,
-    defaultPageSize = 10,
-    pagination = TRUE
-  )
+tagList(
+  tags$button(
+    "Download CSV",
+    onclick = "Reactable.downloadDataCSV('r1-score-for-price-change', 'bitinthat-r1-score-for-price-change.csv')"
+  ),
+  breakeven_score_table |> 
+    reactable(
+      columns = list(
+        player_name = colDef(name = "Player", sticky = "left"),
+        position = colDef(name = "Position"),
+        played_r0 = colDef(name = "Played R0?"),
+        starting_price = colDef(name = "Starting Price", format = price_format),
+        priced_at_preseason = colDef(name = "Priced At"),
+        r1_proj_breakeven_neg150 = colDef(name = "-150k"),
+        r1_proj_breakeven_neg125 = colDef(name = "-125k"),
+        r1_proj_breakeven_neg100 = colDef(name = "-100k"),
+        r1_proj_breakeven_neg75 = colDef(name = "-75k"),
+        r1_proj_breakeven_neg50 = colDef(name = "-50k"),
+        r1_proj_breakeven_neg25 = colDef(name = "-25k"),
+        r1_proj_breakeven_0 = colDef(name = "0k"),
+        r1_proj_breakeven_25 = colDef(name = "25k"),
+        r1_proj_breakeven_50 = colDef(name = "50k"),
+        r1_proj_breakeven_75 = colDef(name = "75k"),
+        r1_proj_breakeven_100 = colDef(name = "100k"),
+        r1_proj_breakeven_125 = colDef(name = "125k"),
+        r1_proj_breakeven_150 = colDef(name = "150k")
+      ),
+      columnGroups = list(
+          colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason")),
+          colGroup(name = "R1 score required to acheieve price change of...", columns = c("r1_proj_breakeven_neg150", "r1_proj_breakeven_neg125", "r1_proj_breakeven_neg100", "r1_proj_breakeven_neg75", "r1_proj_breakeven_neg50", "r1_proj_breakeven_neg25", "r1_proj_breakeven_0", "r1_proj_breakeven_25", "r1_proj_breakeven_50", "r1_proj_breakeven_75", "r1_proj_breakeven_100", "r1_proj_breakeven_125", "r1_proj_breakeven_150"))
+          ),
+      filterable = TRUE,
+      defaultPageSize = 10,
+      pagination = TRUE,
+      elementId = "r1-score-for-price-change"
+    )
+)
 ```
 
 
@@ -211,42 +293,48 @@ priced_at_table <- r1_projected_price_changes |>
     -r1_proj_change_r0
   )
 
-priced_at_table |> 
-  reactable(
-    columns = list(
-      player_name = colDef(name = "Player", sticky = "left"),
-      position = colDef(name = "Position"),
-      played_r0 = colDef(name = "Played R0?"),
-      starting_price = colDef(name = "Starting Price", format = price_format),
-      priced_at_preseason = colDef(name = "Priced At"),
-      priced_at_new = colDef(name = "Priced At (Adjusted)*"),
-      r1_proj_change_priced_at = colDef(name = "@ Priced At"),
-      r1_proj_change_0 = colDef(name = "@ 0"),
-      r1_proj_change_10 = colDef(name = "@ 10"),
-      r1_proj_change_20 = colDef(name = "@ 20"),
-      r1_proj_change_30 = colDef(name = "@ 30"),
-      r1_proj_change_40 = colDef(name = "@ 40"),
-      r1_proj_change_50 = colDef(name = "@ 50"),
-      r1_proj_change_60 = colDef(name = "@ 60"),
-      r1_proj_change_70 = colDef(name = "@ 70"),
-      r1_proj_change_80 = colDef(name = "@ 80"),
-      r1_proj_change_90 = colDef(name = "@ 90"),
-      r1_proj_change_100 = colDef(name = "@ 100"),
-      r1_proj_change_110 = colDef(name = "@ 110"),
-      r1_proj_change_120 = colDef(name = "@ 120"),
-      r1_proj_change_130 = colDef(name = "@ 130"),
-      r1_proj_change_140 = colDef(name = "@ 140"),
-      r1_proj_change_150 = colDef(name = "@ 150")
-    ),
-    columnGroups = list(
-        colGroup(name = "R1 projected 'priced at', if R1 score is ...", columns = c("r1_proj_change_priced_at", "r1_proj_change_0", "r1_proj_change_10", "r1_proj_change_20", "r1_proj_change_30", "r1_proj_change_40", "r1_proj_change_50", "r1_proj_change_60", "r1_proj_change_70", "r1_proj_change_80", "r1_proj_change_90", "r1_proj_change_100", "r1_proj_change_110", "r1_proj_change_120", "r1_proj_change_130", "r1_proj_change_140", "r1_proj_change_150")),
-        colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason", "priced_at_new"))
-        ),
-    filterable = TRUE,
-    defaultPageSize = 10,
-    pagination = TRUE
-  )
-
+tagList(
+  tags$button(
+    "Download CSV",
+    onclick = "Reactable.downloadDataCSV('r1-projected-priced-at', 'bitinthat-r1-projected-priced-at.csv')"
+  ),
+  priced_at_table |> 
+    reactable(
+      columns = list(
+        player_name = colDef(name = "Player", sticky = "left"),
+        position = colDef(name = "Position"),
+        played_r0 = colDef(name = "Played R0?"),
+        starting_price = colDef(name = "Starting Price", format = price_format),
+        priced_at_preseason = colDef(name = "Priced At"),
+        priced_at_new = colDef(name = "Priced At (Adjusted)*"),
+        r1_proj_change_priced_at = colDef(name = "@ Priced At"),
+        r1_proj_change_0 = colDef(name = "@ 0"),
+        r1_proj_change_10 = colDef(name = "@ 10"),
+        r1_proj_change_20 = colDef(name = "@ 20"),
+        r1_proj_change_30 = colDef(name = "@ 30"),
+        r1_proj_change_40 = colDef(name = "@ 40"),
+        r1_proj_change_50 = colDef(name = "@ 50"),
+        r1_proj_change_60 = colDef(name = "@ 60"),
+        r1_proj_change_70 = colDef(name = "@ 70"),
+        r1_proj_change_80 = colDef(name = "@ 80"),
+        r1_proj_change_90 = colDef(name = "@ 90"),
+        r1_proj_change_100 = colDef(name = "@ 100"),
+        r1_proj_change_110 = colDef(name = "@ 110"),
+        r1_proj_change_120 = colDef(name = "@ 120"),
+        r1_proj_change_130 = colDef(name = "@ 130"),
+        r1_proj_change_140 = colDef(name = "@ 140"),
+        r1_proj_change_150 = colDef(name = "@ 150")
+      ),
+      columnGroups = list(
+          colGroup(name = "R1 projected 'priced at', if R1 score is ...", columns = c("r1_proj_change_priced_at", "r1_proj_change_0", "r1_proj_change_10", "r1_proj_change_20", "r1_proj_change_30", "r1_proj_change_40", "r1_proj_change_50", "r1_proj_change_60", "r1_proj_change_70", "r1_proj_change_80", "r1_proj_change_90", "r1_proj_change_100", "r1_proj_change_110", "r1_proj_change_120", "r1_proj_change_130", "r1_proj_change_140", "r1_proj_change_150")),
+          colGroup(name = "Player info", columns = c("position", "played_r0", "starting_price", "priced_at_preseason", "priced_at_new"))
+          ),
+      filterable = TRUE,
+      defaultPageSize = 10,
+      pagination = TRUE,
+      elementId = "r1-projected-priced-at"
+    )
+)
 ```
 
 *: Priced at (adjusted) is adjusted for expected magic number decay.
