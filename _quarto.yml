@@ -55,6 +55,10 @@ website:
         icon: piggy-bank-fill
         href: "pricing/af_price_changes_r1.qmd"
         
+      - text: AF Price Projector
+        icon: graph-up-arrow
+        href: "pricing/af_price_projector.qmd"
+        
       - text: Fantasy ownership
         icon: magic
         href: "ownership/af.qmd"
