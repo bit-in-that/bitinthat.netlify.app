@@ -64,7 +64,7 @@ tagList(
     filterable = TRUE,
     defaultPageSize = 10,
     pagination = TRUE,
-    elementId = "r0-player-table"
+    elementId = "r0-player-hidden"
   )
 )
 
